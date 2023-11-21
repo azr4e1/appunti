@@ -70,12 +70,14 @@ class Interactive:
                 if text != new_text:
                     pos = 0
                     self.relative_start = 0
+                    redraw = True
                 text = new_text
             case curses.KEY_DC:
                 new_text = text[:self.cursor_pos] + text[self.cursor_pos+1:] if self.cursor_pos <= len(text) else text
                 if text != new_text:
                     pos = 0
                     self.relative_start = 0
+                    redraw = True
                 text = new_text
             case curses.KEY_LEFT:
                 # check cursor position
@@ -90,6 +92,7 @@ class Interactive:
                     self.cursor_pos += 1
                 pos = 0
                 self.relative_start = 0
+                redraw = True
 
         return text, pos, endit, redraw
 
@@ -190,14 +193,16 @@ class Interactive:
             # enforce checks on pos
             pos, redraw_pos = self.check_pos(pos, result_list)
             # only redraw results if input changed
-            if new_text != text or redraw_pos or redraw_key:
-                # parse the text to intercept tag or link filters
-                parsed_text, tags, links = self.parse_text(new_text)
-                text = new_text
-                # update list of notes
-                result_list = self.zk.list_notes(title=[f"%{parsed_text}%"],
-                                                 tags=tags,
-                                                 links=links)
+            if redraw_pos or redraw_key:
+                # if text changed, recalculate list
+                if new_text != text:
+                    # parse the text to intercept tag or link filters
+                    parsed_text, tags, links = self.parse_text(new_text)
+                    text = new_text
+                    # update list of notes
+                    result_list = self.zk.list_notes(title=[f"%{parsed_text}%"],
+                                                     tags=tags,
+                                                     links=links)
 
                 self.print_results(result_list, pos)
 
