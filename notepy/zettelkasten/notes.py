@@ -205,7 +205,7 @@ class Note(BaseNote):
                              for note_field in fields(Note)
                              if note_field.name not in ['links', 'body']]
         frontmatter_metadata = {name: getattr(self, name) for name in frontmatter_names}
-        frontmatter_metadata['tags'] = " ".join(frontmatter_metadata['tags'])
+        frontmatter_metadata['tags'] = " ".join('#' + tag for tag in frontmatter_metadata['tags'])
         frontmatter_metadata['date'] = (frontmatter_metadata['date']
                                         .strftime("%Y-%m-%dT%H:%M:%S"))
         frontmatter_metadata['last'] = (frontmatter_metadata['last']
