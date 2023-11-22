@@ -270,8 +270,6 @@ class Interactive:
                 for index, el in enumerate(result_list):
                     if self.selection[index]:
                         final_result.append(el[1])
-            with open("/home/ld/log", "a") as f:
-                f.write(str(final_result)+"\n")
 
             return final_result
 
