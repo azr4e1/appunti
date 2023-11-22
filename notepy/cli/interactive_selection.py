@@ -7,13 +7,14 @@ from notepy.zettelkasten.zettelkasten import Zettelkasten
 
 ESCAPE_DELAY = 50
 POSITION_OFFSET = 2
-TEXT_DELIMITER = "&&"
+TITLE_DELIMITER = "&&"
 
 
 class OddKeys(IntEnum):
     ESCAPE = 27
     ALT_ENTER_1 = 10
     ALT_ENTER_2 = 13
+    TAB = 9
 
 
 # TODO: add window to the right containing metadata information if there is enough space
@@ -61,6 +62,10 @@ class Interactive:
                 pos -= 1
             case curses.KEY_DOWN:
                 pos += 1
+            case OddKeys.TAB:
+                pos += 1
+            case curses.KEY_BTAB:
+                pos -= 1
             case curses.KEY_RESIZE:
                 curses.resize_term(*self.w.getmaxyx())
                 redraw = True
@@ -138,7 +143,7 @@ class Interactive:
         tags = []
         links = []
         for tag in raw_tags:
-            text = text.replace(tag, TEXT_DELIMITER)
+            text = text.replace(tag, TITLE_DELIMITER)
             raw_tag = tag.removeprefix('#')
             if raw_tag.startswith("!"):
                 actual_tag = f"!%{raw_tag[1:]}%"
@@ -146,7 +151,7 @@ class Interactive:
                 actual_tag = f"%{raw_tag}%"
             tags.append(actual_tag)
         for link in raw_links:
-            text = text.replace(link, TEXT_DELIMITER)
+            text = text.replace(link, TITLE_DELIMITER)
             raw_link = link.removeprefix('[[').removesuffix(']]')
             if raw_link.startswith("!"):
                 actual_link = f"!%{raw_link[1:]}%"
@@ -156,7 +161,7 @@ class Interactive:
         tags = tags if tags else None
         links = links if links else None
 
-        text_elements = text.split(TEXT_DELIMITER)
+        text_elements = text.split(TITLE_DELIMITER)
         final_text = []
         for text_el in text_elements:
             text_el = text_el.strip()
