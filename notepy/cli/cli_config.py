@@ -46,7 +46,7 @@ _COMMANDS: MutableMapping[str, Any] = {
         "flags": {
             "zk_id": {
                 "help": "ID of the note to open.",
-                "nargs": "?",
+                "nargs": "*",
                 "type": int
             },
             "--no-confirmation": {
@@ -88,7 +88,7 @@ _COMMANDS: MutableMapping[str, Any] = {
         "flags": {
             "zk_id": {
                 "help": "ID of the note to print.",
-                "nargs": "?",
+                "nargs": "*",
                 "type": int,
             }
         }
@@ -207,7 +207,7 @@ _COMMANDS: MutableMapping[str, Any] = {
         "flags": {
             "zk_id": {
                 "help": "ID of the note to print.",
-                "nargs": "?",
+                "nargs": "*",
                 "type": int,
             },
             "--no-color": {
