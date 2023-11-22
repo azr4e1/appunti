@@ -138,12 +138,23 @@ class Interactive:
         links = []
         for tag in raw_tags:
             text = text.replace(tag, "")
-            tags.append("#%" + tag[1:] + "%")
+            raw_tag = tag.removeprefix('#')
+            if raw_tag.startswith("!"):
+                actual_tag = f"!%{raw_tag[1:]}%"
+            else:
+                actual_tag = f"%{raw_tag}%"
+            tags.append(actual_tag)
         for link in raw_links:
             text = text.replace(link, "")
-            links.append("%"+link.removeprefix('[[').removesuffix(']]')+"%")
+            raw_link = link.removeprefix('[[').removesuffix(']]')
+            if raw_link.startswith("!"):
+                actual_link = f"!%{raw_link[1:]}%"
+            else:
+                actual_link = f"%{raw_link}%"
+            links.append(actual_link)
         tags = tags if tags else None
         links = links if links else None
+
         return text.strip(), tags, links
 
     @staticmethod
