@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Optional
-from collections.abc import Sequence, MutableMapping, Collection
+from collections.abc import MutableMapping, Collection
 
 from dataclasses import dataclass, fields
 from pathlib import Path
@@ -332,7 +332,7 @@ class Zettelkasten(GitMixin):
         # check if vault is a zettelkasten
         self._check_zettelkasten()
 
-        filenames = []
+        filenames: list[Path | str] = []
         for id in set(zk_id):
             # check that the note exists
             if not self._note_exists(id):
@@ -426,7 +426,7 @@ class Zettelkasten(GitMixin):
 
     def list_notes(self,
                    title: Optional[list[str]] = None,
-                   zk_id: Optional[list[str]] = None,
+                   zk_id: Optional[list[int]] = None,
                    author: Optional[list[str]] = None,
                    tags: Optional[list[str]] = None,
                    links: Optional[list[str]] = None,
@@ -434,7 +434,7 @@ class Zettelkasten(GitMixin):
                    # access_date: Optional[list[str]] = None,
                    sort_by: Optional[str] = None,
                    descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> Sequence[tuple[int, str]]:
+                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str | int, ...]]:
         """
         List and filter based on tags, links and date
         """
@@ -608,8 +608,8 @@ class Zettelkasten(GitMixin):
             notes.append(note)
 
         # get links and other metadata
-        links = set()
-        tags = set()
+        links: set[str] = set()
+        tags: set [str] = set()
         for note in notes:
             links = links.union(note.links)
             tags = tags.union(note.tags)
@@ -678,7 +678,7 @@ class Zettelkasten(GitMixin):
                    'link']
         result = self.list_notes(zk_id=[zk_id],
                                  show=columns)
-        metadata = {}
+        metadata: MutableMapping[str, Any] = {}
         metadata['zk_id'] = result[0][0]
         metadata['title'] = result[0][1]
         metadata['author'] = result[0][2]

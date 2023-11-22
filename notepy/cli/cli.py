@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Optional
 from collections.abc import MutableMapping
 
 from dataclasses import dataclass, fields
@@ -31,6 +31,37 @@ _SEPARATOR_LENGTH = 33
 
 
 class SubcommandsMixin:
+
+    @staticmethod
+    def not_implemented(args: Namespace) -> None:
+        print("Function not implemented.")
+
+    @staticmethod
+    def _get_zk_id(args: Namespace, my_zk: Zettelkasten) -> Optional[list[int]]:
+        if args.zk_id is None or not args.zk_id:
+            loop = Interactive(my_zk)
+            zk_id = loop.run()
+        else:
+            try:
+                zk_id = []
+                for id in args.zk_id:
+                    zk_id.append(my_zk.get_last() if id == -1 else id)
+            except zk.ZettelkastenException as e:
+                print(e)
+                return None
+
+        return zk_id
+
+    @staticmethod
+    def _create_zettelkasten(args: Namespace) -> Zettelkasten:
+        my_zk = Zettelkasten(vault=args.vault,
+                             author=args.author[0],
+                             autocommit=args.autocommit,
+                             autosync=args.autosync,
+                             editor=args.editor[0])
+
+        return my_zk
+
     @staticmethod
     def initialize(args: Namespace) -> None:
         try:
@@ -118,13 +149,13 @@ class SubcommandsMixin:
         if len(zk_ids) == 1:
             # single note deletion
             @spinner("Deleting note...", "Deleted note {}.", format=True)
-            def decorated_delete():
+            def decorated_delete() -> int:
                 my_zk.delete(zk_ids[0])
                 return zk_ids[0]
         else:
             # batch deletion
             @spinner("Deleting notes...", "Deleted {} notes.", format=True)
-            def decorated_delete():
+            def decorated_delete() -> int:
                 no_deletions = my_zk.delete_multiple(zk_ids)
                 return no_deletions
 
@@ -140,31 +171,8 @@ class SubcommandsMixin:
             print(my_zk.print_note(zk_id))
 
     @staticmethod
-    def list(args: Namespace) -> None:
-        try:
-            my_zk = SubcommandsMixin._create_zettelkasten(args)
-            results = my_zk.list_notes(args.title,
-                                       args.zk_id,
-                                       args.author_name,
-                                       args.tags,
-                                       args.links,
-                                       # args.creation_date,
-                                       # args.access_date,
-                                       args.sort_by[0],
-                                       args.descending,
-                                       args.show)
-            SubcommandsMixin._pretty_print(args.show,
-                                           results,
-                                           no_header=args.no_header,
-                                           no_color=args.no_color)
-        except zk.ZettelkastenException as e:
-            print(e)
-        except DBManagerException as e:
-            print(e)
-
-    @staticmethod
     def _pretty_print(header_names: list[str],
-                      results: list[tuple[str]],
+                      results: list[tuple[str | int, ...]],
                       no_header: bool = False,
                       no_color: bool = False) -> None:
         if not no_header:
@@ -216,8 +224,10 @@ class SubcommandsMixin:
         my_zk.multiprocess_index_vault()
 
     @staticmethod
-    def _info_helper(args, my_zk, zk_id):
-        result = my_zk.get_metadata(str(zk_id))
+    def _info_helper(args: Namespace,
+                     my_zk: Zettelkasten,
+                     zk_id: int) -> None:
+        result = my_zk.get_metadata(zk_id)
         columns = list(result.keys())
         max_length = len(max(columns, key=len)) + _TAB_LENGTH
         for col in result:
@@ -259,34 +269,27 @@ class SubcommandsMixin:
             print(e)
 
     @staticmethod
-    def _create_zettelkasten(args: Namespace) -> Zettelkasten:
-        my_zk = Zettelkasten(vault=args.vault,
-                             author=args.author[0],
-                             autocommit=args.autocommit,
-                             autosync=args.autosync,
-                             editor=args.editor[0])
-
-        return my_zk
-
-    @staticmethod
-    def not_implemented(args: Namespace) -> None:
-        print("Function not implemented.")
-
-    @staticmethod
-    def _get_zk_id(args: Namespace, my_zk: Zettelkasten) -> None:
-        if args.zk_id is None or not args.zk_id:
-            loop = Interactive(my_zk)
-            zk_id = loop.run()
-        else:
-            try:
-                zk_id = []
-                for id in args.zk_id:
-                    zk_id.append(my_zk.get_last() if id == -1 else id)
-            except zk.ZettelkastenException as e:
-                print(e)
-                return
-
-        return zk_id
+    def list(args: Namespace) -> None:
+        try:
+            my_zk = SubcommandsMixin._create_zettelkasten(args)
+            results = my_zk.list_notes(args.title,
+                                       args.zk_id,
+                                       args.author_name,
+                                       args.tags,
+                                       args.links,
+                                       # args.creation_date,
+                                       # args.access_date,
+                                       args.sort_by[0],
+                                       args.descending,
+                                       args.show)
+            SubcommandsMixin._pretty_print(args.show,
+                                           results,
+                                           no_header=args.no_header,
+                                           no_color=args.no_color)
+        except zk.ZettelkastenException as e:
+            print(e)
+        except DBManagerException as e:
+            print(e)
 
 
 @dataclass

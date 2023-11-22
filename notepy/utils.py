@@ -1,28 +1,47 @@
 import sys
 from threading import Thread
-from collections.abc import Callable
 import time
 from functools import wraps
 
-from typing import Optional
+from collections.abc import Callable
+from typing import Optional, Protocol, Any, ParamSpec, TypeVar, TypeAlias
+
 
 _WAIT_TIME = 0.08
 
+# from: https://stackoverflow.com/questions/47060133/python-3-type-hinting-for-decorator
+Param = ParamSpec('Param')
+RetType = TypeVar('RetType')
+OriginalFunc: TypeAlias = Callable[Param, RetType]
+DecoratedFunc: TypeAlias = Callable[Param, RetType]
+Decorator: TypeAlias = Callable[[OriginalFunc], DecoratedFunc]
 
-class PropagatingThread(Thread):
+
+class ThreadType(Protocol):
+    @property
+    def _target(self) -> Any: return None
+
+    @property
+    def _args(self) -> Any: return None
+
+    @property
+    def _kwargs(self) -> Any: return None
+
+
+class PropagatingThread(ThreadType, Thread):
     """
     Thread subclasses to propagate exceptions in the parent context.
     From: https://stackoverflow.com/questions/2829329/catch-a-threads-exception-in-the-caller-thread
     """
 
-    def run(self):
+    def run(self) -> None:
         self.exc = None
         try:
             self.ret = self._target(*self._args, **self._kwargs)
         except BaseException as e:
             self.exc = e
 
-    def join(self, timeout: Optional[float] = None):
+    def join(self, timeout: Optional[float] = None) -> Any:
         super().join(timeout)
         if self.exc:
             raise self.exc
@@ -30,15 +49,15 @@ class PropagatingThread(Thread):
         return self.ret
 
 
-def spinner(msg: str = "", epilogue: str = "", format=False) -> Callable:
+def spinner(msg: str = "", epilogue: str = "", format: bool = False) -> Decorator:
     # output a decorator that uses these arguments
 
     # decorator to show a spinner for long functions
-    def spinner_with_message(func: Callable):
+    def spinner_with_message(func: OriginalFunc) -> DecoratedFunc:
         spinner_elements = "⣾⣽⣻⢿⡿⣟⣯⣷"
 
         @wraps(func)
-        def threaded(*args, **kwargs):
+        def threaded(*args: Param.args, **kwargs: Param.kwargs) -> None:
             # spawn a thread for the operation
             thread = PropagatingThread(target=func, args=args, kwargs=kwargs)
             try:

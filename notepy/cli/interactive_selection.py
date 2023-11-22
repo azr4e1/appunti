@@ -3,6 +3,9 @@ from enum import IntEnum
 import re
 from collections import defaultdict
 
+from collections.abc import MutableMapping
+from typing import Optional, cast
+
 from notepy.zettelkasten.zettelkasten import Zettelkasten
 
 
@@ -32,12 +35,14 @@ class Interactive:
         self.relative_cursor = 0
         self.relative_start = 0
         self.prev_relative_start = 0
-        self.selection = defaultdict(int)
+        self.selection: MutableMapping[int, int] = defaultdict(int)
         curses.start_color()
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-    def print_results(self, results, pos):
+    def print_results(self,
+                      results: list[tuple[str | int, ...]],
+                      pos: int) -> None:
         curses.curs_set(False)
         template = " {}{}"
         for i in range(POSITION_OFFSET, curses.LINES):
@@ -47,7 +52,7 @@ class Interactive:
         curses.curs_set(True)
 
     @staticmethod
-    def check_cursor_pos(text, pos):
+    def check_cursor_pos(text: str, pos: int) -> int:
         length = len(text)
         if pos < 0:
             pos = 0
@@ -56,7 +61,10 @@ class Interactive:
 
         return pos
 
-    def catch_key(self, c, text, pos):
+    def catch_key(self,
+                  c: int,
+                  text: str,
+                  pos: int) -> tuple[str, int, bool, bool]:
         endit = False
         redraw = False
         match c:
@@ -118,7 +126,9 @@ class Interactive:
 
         return text, pos, endit, redraw
 
-    def check_pos(self, pos, results):
+    def check_pos(self,
+                  pos: int,
+                  results: list[tuple[str | int, ...]]) -> tuple[int, bool]:
         length = len(results)
         redraw = False
         current_position = pos - self.relative_start + POSITION_OFFSET
@@ -144,14 +154,16 @@ class Interactive:
 
         return pos, redraw
 
-    def draw_pointer(self, pos, old_pos):
+    def draw_pointer(self,
+                     pos: int,
+                     old_pos: int) -> None:
         if (cancel_pos := old_pos-self.prev_relative_start+POSITION_OFFSET) < curses.LINES:
             self.w.addstr(cancel_pos, 0, " ")
         self.prev_relative_start = self.relative_start
         self.w.addstr(pos-self.relative_start+POSITION_OFFSET, 0, ">", curses.color_pair(1))
 
     @staticmethod
-    def parse_text(text: str) -> tuple[str, list[str], list[str]]:
+    def parse_text(text: str) -> tuple[list[str], Optional[list[str]], Optional[list[str]]]:
         tag_pattern = re.compile(r"#[^ ]*", re.IGNORECASE)
         link_pattern = re.compile(r"\[\[.*?\]\]")
         raw_tags = re.findall(tag_pattern, text)
@@ -174,8 +186,8 @@ class Interactive:
             else:
                 actual_link = f"%{raw_link}%"
             links.append(actual_link)
-        tags = tags if tags else None
-        links = links if links else None
+        optional_tags = tags if tags else None
+        optional_links = links if links else None
 
         text_elements = text.split(TITLE_DELIMITER)
         final_text = []
@@ -188,10 +200,10 @@ class Interactive:
             else:
                 text_el = f"%{text_el}%"
             final_text.append(text_el)
-        return final_text, tags, links
+        return final_text, optional_tags, optional_links
 
     @staticmethod
-    def pad_text(text):
+    def pad_text(text: str) -> str:
         length = len(text)
         length_to_fill = curses.COLS - length if length < curses.COLS else 0
         padding = " " * (length_to_fill-1)
@@ -200,7 +212,9 @@ class Interactive:
 
         return padded_text[:curses.COLS-1]
 
-    def pad_results(self, draw_pos, results, template):
+    def pad_results(self, draw_pos: int,
+                    results: list[tuple[str | int, ...]],
+                    template: str) -> str:
         if draw_pos < len(results)+POSITION_OFFSET:
             index = draw_pos - POSITION_OFFSET
             title = results[index][0]
@@ -212,7 +226,7 @@ class Interactive:
 
         return text
 
-    def _main(self):
+    def _main(self) -> Optional[list[int]]:
         # clear screen
         self.w.clear()
         # show cursor
@@ -271,9 +285,11 @@ class Interactive:
                     if self.selection[index]:
                         final_result.append(el[1])
 
-            return final_result
+            return cast(list[int], final_result)
 
-    def run(self):
+        return None
+
+    def run(self) -> Optional[list[int]]:
         try:
             curses.noecho()
             curses.cbreak()
@@ -282,7 +298,7 @@ class Interactive:
             return self._main()
 
         except KeyboardInterrupt:
-            pass
+            return None
         finally:
             curses.nocbreak()
             self.w.keypad(False)

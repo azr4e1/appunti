@@ -3,13 +3,11 @@ SQLite statements to manage index
 """
 
 import sqlite3
-from datetime import datetime
-from collections.abc import Sequence
 from pathlib import Path
 
 from typing import Optional
 
-from notepy.zettelkasten.notes import Note, sluggify
+from notepy.zettelkasten.notes import Note
 
 
 _CREATE_MAIN_TABLE_STMT = """
@@ -157,7 +155,7 @@ class DBManager:
     # a huge join but build incrementally?
     def list_notes(self,
                    title: Optional[list[str]] = None,
-                   zk_id: Optional[list[str]] = None,
+                   zk_id: Optional[list[int]] = None,
                    author: Optional[list[str]] = None,
                    tag: Optional[list[str]] = None,
                    link: Optional[list[str]] = None,
@@ -165,7 +163,7 @@ class DBManager:
                    # access_date: Optional[list[str]] = None,
                    sort_by: Optional[str] = None,
                    descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> Sequence[tuple[int, str]]:
+                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str | int, ...]]:
         """
         """
         query: str = _JOINED_ALL
@@ -211,28 +209,31 @@ class DBManager:
         # return query
 
     @staticmethod
-    def _assemble_templated_query(table_name, column_name, column_values):
+    def _assemble_templated_query(table_name: str,
+                                  column_name: str,
+                                  column_values: list[str]) -> tuple[str, list[str]]:
         query_template = "SELECT zk_id FROM {} WHERE zk_id IN ({})"
         query = f"SELECT zk_id from {table_name}"
-        payload = []
-        for el in column_values:
+        payload: list[str] = []
+        for element in column_values:
+            str_el = str(element)
             query = query_template.format(table_name, query)
-            if el.startswith("!"):
+            if str_el.startswith("!"):
                 query += f" AND zk_id NOT IN (SELECT zk_id FROM {table_name} WHERE {column_name} LIKE ?)"
-                payload.append(el.removeprefix("!"))
+                payload.append(str_el.removeprefix("!"))
             else:
                 query += f" AND {column_name} LIKE ?"
-                payload.append(el)
+                payload.append(str_el)
 
         return query, payload
 
-    def get_title(self) -> Sequence[str]:
+    def get_title(self) -> list[str]:
         with sqlite3.connect(self.index) as conn:
             results = conn.execute("select title from zettelkasten;").fetchall()
 
         return results
 
-    def get_links(self, zk_id: int) -> Sequence[str]:
+    def get_links(self, zk_id: int) -> list[str]:
         """
         Return all the links associated to an ID.
 
