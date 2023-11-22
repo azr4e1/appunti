@@ -26,6 +26,8 @@ _COLORS = {
     "last_changed": "RED"
 }
 
+_TAB_LENGTH = 4
+
 
 class SubcommandsMixin:
     @staticmethod
@@ -223,20 +225,24 @@ class SubcommandsMixin:
             return
         try:
             result = my_zk.get_metadata(str(zk_id))
+            columns = list(result.keys())
+            max_length = len(max(columns, key=len)) + _TAB_LENGTH
             for col in result:
                 if col in ['tag', 'link']:
                     continue
                 text = color(col, _COLORS.get(col, "WHITE"),
                              no_color=args.no_color)
-                print(f"{text}: {result[col]}")
+                distance = " " * (max_length - len(col))
+                print(f"{text}: {distance}{result[col]}")
             for col in ['tag', 'link']:
                 length_text = len(col+": ")
                 elements = list(result[col])
                 text = color(col, _COLORS.get(col, "WHITE"),
                              no_color=args.no_color)
-                print(f"{text}: {elements[0]}")
+                distance = " " * (max_length - len(col))
+                print(f"{text}: {distance}{elements[0]}")
                 for el in elements[1:]:
-                    print(" "*length_text + el)
+                    print(distance + " "*length_text + el)
 
         except TypeError as e:
             print(e)
