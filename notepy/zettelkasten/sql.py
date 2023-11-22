@@ -172,19 +172,24 @@ class DBManager:
         payload = []
         select_cols = "SELECT DISTINCT " + ", ".join(f"{col}" for col in show) + " FROM "
 
-        columns_query = []
-        for col in ['title', 'zk_id', 'author', 'tag', 'link']:
-            local_col = locals()[col]
-            if local_col is not None:
-                col_query = " OR ".join(f"{col} LIKE ?"
-                                        if not el.startswith("!")
-                                        else f"{col} NOT LIKE ?"
-                                        for el in local_col
-                                        )
-                payload.extend([el.removeprefix("!") for el in local_col])
-                columns_query.append(col_query)
-        where_query = " AND ".join(columns_query)
-        where_query = "WHERE " + where_query if where_query else ""
+        queries = []
+        for name, table in [('title', 'zettelkasten'),
+                            ('zk_id', 'zettelkasten'),
+                            ('author', 'zettelkasten'),
+                            ('tag', 'tags'),
+                            ('link', 'links')]:
+
+            value = locals()[name]
+            if value is None:
+                continue
+            tmp_query, tmp_payload = self._assemble_templated_query(table,
+                                                                    name,
+                                                                    value)
+            payload += tmp_payload
+            queries.append(tmp_query)
+
+        sub_queries = " AND ".join([f"zk_id IN ({tmp_query})" for tmp_query in queries])
+        where_query = " WHERE " + sub_queries if sub_queries else ""
 
         ascending_query = "DESC" if descending else "ASC"
         sort_query = ""
@@ -203,6 +208,23 @@ class DBManager:
                                      f"\nError: {e}")
 
         return results
+        # return query
+
+    @staticmethod
+    def _assemble_templated_query(table_name, column_name, column_values):
+        query_template = "SELECT zk_id FROM {} WHERE zk_id IN ({})"
+        query = f"SELECT zk_id from {table_name}"
+        payload = []
+        for el in column_values:
+            query = query_template.format(table_name, query)
+            if el.startswith("!"):
+                query += f" AND zk_id NOT IN (SELECT zk_id FROM {table_name} WHERE {column_name} LIKE ?)"
+                payload.append(el.removeprefix("!"))
+            else:
+                query += f" AND {column_name} LIKE ?"
+                payload.append(el)
+
+        return query, payload
 
     def get_title(self) -> Sequence[str]:
         with sqlite3.connect(self.index) as conn:
