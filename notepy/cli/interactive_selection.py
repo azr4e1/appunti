@@ -7,6 +7,7 @@ from notepy.zettelkasten.zettelkasten import Zettelkasten
 
 ESCAPE_DELAY = 50
 POSITION_OFFSET = 2
+TEXT_DELIMITER = "&&"
 
 
 class OddKeys(IntEnum):
@@ -137,7 +138,7 @@ class Interactive:
         tags = []
         links = []
         for tag in raw_tags:
-            text = text.replace(tag, "")
+            text = text.replace(tag, TEXT_DELIMITER)
             raw_tag = tag.removeprefix('#')
             if raw_tag.startswith("!"):
                 actual_tag = f"!%{raw_tag[1:]}%"
@@ -145,7 +146,7 @@ class Interactive:
                 actual_tag = f"%{raw_tag}%"
             tags.append(actual_tag)
         for link in raw_links:
-            text = text.replace(link, "")
+            text = text.replace(link, TEXT_DELIMITER)
             raw_link = link.removeprefix('[[').removesuffix(']]')
             if raw_link.startswith("!"):
                 actual_link = f"!%{raw_link[1:]}%"
@@ -155,7 +156,18 @@ class Interactive:
         tags = tags if tags else None
         links = links if links else None
 
-        return text.strip(), tags, links
+        text_elements = text.split(TEXT_DELIMITER)
+        final_text = []
+        for text_el in text_elements:
+            text_el = text_el.strip()
+            if not text_el:
+                continue
+            if text_el.startswith("!"):
+                text_el = f"!%{text_el[1:]}%"
+            else:
+                text_el = f"%{text_el}%"
+            final_text.append(text_el)
+        return final_text, tags, links
 
     @staticmethod
     def pad_text(text):
@@ -211,7 +223,7 @@ class Interactive:
                     parsed_text, tags, links = self.parse_text(new_text)
                     text = new_text
                     # update list of notes
-                    result_list = self.zk.list_notes(title=[f"%{parsed_text}%"],
+                    result_list = self.zk.list_notes(title=parsed_text,
                                                      tags=tags,
                                                      links=links)
 
