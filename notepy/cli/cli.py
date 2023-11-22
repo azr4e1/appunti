@@ -27,6 +27,7 @@ _COLORS = {
 }
 
 _TAB_LENGTH = 4
+_SEPARATOR_LENGTH = 33
 
 
 class SubcommandsMixin:
@@ -69,12 +70,13 @@ class SubcommandsMixin:
     def edit(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
-            zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-            if zk_id is None:
+            zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+            if zk_ids is None or not zk_ids:
                 return
-            my_zk.update(zk_id,
-                         confirmation=args.no_confirmation,
-                         strict=args.strict)
+            for zk_id in zk_ids:
+                my_zk.update(zk_id,
+                             confirmation=args.no_confirmation,
+                             strict=args.strict)
         except zk.ZettelkastenException as e:
             print(e)
         except WrapperException as e:
@@ -83,22 +85,17 @@ class SubcommandsMixin:
             print(e)
         except NoteException as e:
             print(e)
+        except KeyboardInterrupt:
+            pass
 
     @staticmethod
     def open(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
-            if len(args.zk_id) <= 1:
-                zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-                if zk_id is None:
-                    return
-                else:
-                    zk_id = [zk_id]
-            else:
-                zk_id = [my_zk.get_last()
-                         if zk_id == -1
-                         else zk_id for zk_id in args.zk_id]
-            my_zk.open(zk_id)
+            zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+            if zk_ids is None or not zk_ids:
+                return
+            my_zk.open(zk_ids)
         except zk.ZettelkastenException as e:
             print(e)
         except WrapperException as e:
@@ -109,8 +106,8 @@ class SubcommandsMixin:
     @staticmethod
     def delete(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
-        zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-        if zk_id is None:
+        zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+        if zk_ids is None or not zk_ids:
             return
 
         # we need to ask for confirmation here since it would
@@ -118,17 +115,17 @@ class SubcommandsMixin:
         if args.no_confirmation and not ask_for_confirmation("Delete note(s)?"):
             return None
 
-        if len(args.zk_id) <= 1:
+        if len(zk_ids) == 1:
             # single note deletion
             @spinner("Deleting note...", "Deleted note {}.", format=True)
             def decorated_delete():
-                my_zk.delete(zk_id)
-                return zk_id
+                my_zk.delete(zk_ids[0])
+                return zk_ids[0]
         else:
             # batch deletion
             @spinner("Deleting notes...", "Deleted {} notes.", format=True)
             def decorated_delete():
-                no_deletions = my_zk.delete_multiple(args.zk_id)
+                no_deletions = my_zk.delete_multiple(zk_ids)
                 return no_deletions
 
         decorated_delete()
@@ -136,10 +133,11 @@ class SubcommandsMixin:
     @staticmethod
     def print(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
-        zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-        if zk_id is None:
+        zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+        if zk_ids is None or not zk_ids:
             return
-        print(my_zk.print_note(zk_id))
+        for zk_id in zk_ids:
+            print(my_zk.print_note(zk_id))
 
     @staticmethod
     def list(args: Namespace) -> None:
@@ -194,11 +192,11 @@ class SubcommandsMixin:
     def next(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
-            zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-            if zk_id is None:
+            zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+            if zk_ids is None or not zk_ids:
                 return
             my_zk.next(args.title[0],
-                       zk_id,
+                       zk_ids,
                        args.no_confirmation,
                        args.strict)
         except zk.ZettelkastenException as e:
@@ -218,37 +216,43 @@ class SubcommandsMixin:
         my_zk.multiprocess_index_vault()
 
     @staticmethod
+    def _info_helper(args, my_zk, zk_id):
+        result = my_zk.get_metadata(str(zk_id))
+        columns = list(result.keys())
+        max_length = len(max(columns, key=len)) + _TAB_LENGTH
+        for col in result:
+            if col in ['tag', 'link']:
+                continue
+            distance = " " * (max_length - len(col))
+            text = f"{col}: {distance}{result[col]}"
+            colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                 no_color=args.no_color)
+            print(colored_text)
+        for col in ['tag', 'link']:
+            length_text = len(col+": ")
+            elements = list(result[col])
+            distance = " " * (max_length - len(col))
+            text = f"{col}: {distance}{elements[0]}"
+            colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                 no_color=args.no_color)
+            print(colored_text)
+            for el in elements[1:]:
+                text = distance + " "*length_text + el
+                colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                     no_color=args.no_color)
+                print(colored_text)
+
+    @staticmethod
     def info(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
-        zk_id = SubcommandsMixin._get_zk_id(args, my_zk)
-        if zk_id is None:
-            return
         try:
-            result = my_zk.get_metadata(str(zk_id))
-            columns = list(result.keys())
-            max_length = len(max(columns, key=len)) + _TAB_LENGTH
-            for col in result:
-                if col in ['tag', 'link']:
-                    continue
-                distance = " " * (max_length - len(col))
-                text = f"{col}: {distance}{result[col]}"
-                colored_text = color(text, _COLORS.get(col, "WHITE"),
-                                     no_color=args.no_color)
-                print(colored_text)
-            for col in ['tag', 'link']:
-                length_text = len(col+": ")
-                elements = list(result[col])
-                distance = " " * (max_length - len(col))
-                text = f"{col}: {distance}{elements[0]}"
-                colored_text = color(text, _COLORS.get(col, "WHITE"),
-                                     no_color=args.no_color)
-                print(colored_text)
-                for el in elements[1:]:
-                    text = distance + " "*length_text + el
-                    colored_text = color(text, _COLORS.get(col, "WHITE"),
-                                         no_color=args.no_color)
-                    print(colored_text)
-
+            zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+            if zk_ids is None or not zk_ids:
+                return
+            for zk_id in zk_ids:
+                print("-"*_SEPARATOR_LENGTH)
+                SubcommandsMixin._info_helper(args, my_zk, zk_id)
+                print("-"*_SEPARATOR_LENGTH)
         except TypeError as e:
             print(e)
         except zk.ZettelkastenException as e:
@@ -275,12 +279,9 @@ class SubcommandsMixin:
             zk_id = loop.run()
         else:
             try:
-                if isinstance(args.zk_id, list):
-                    zk_id = args.zk_id[0]
-                else:
-                    zk_id = args.zk_id
-                if zk_id == -1:
-                    zk_id = my_zk.get_last()
+                zk_id = []
+                for id in args.zk_id:
+                    zk_id.append(my_zk.get_last() if id == -1 else id)
             except zk.ZettelkastenException as e:
                 print(e)
                 return
