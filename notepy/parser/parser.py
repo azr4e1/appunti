@@ -204,7 +204,7 @@ class HeaderParser(BaseParser):
         # split tags, clean out whitespace and remove words
         # not starting with #
         tmp_tags_list: list[str] = clean_tags.split(' ')
-        tags_list = set([tag for tag in tmp_tags_list
+        tags_list = set([tag.removeprefix('#') for tag in tmp_tags_list
                          if tag != '' and tag.startswith('#')])
 
         return tags_list
