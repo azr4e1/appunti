@@ -572,7 +572,7 @@ class Zettelkasten(GitMixin):
         return last_content
 
     def next(self, title: str,
-             zk_id: int,
+             zk_ids: list[int],
              confirmation: bool = False,
              strict: bool = False) -> None:
         """
@@ -588,25 +588,32 @@ class Zettelkasten(GitMixin):
         self._check_unique_title(title)
 
         # check that the note exists
-        if not self._note_exists(zk_id):
-            raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
+        for zk_id in zk_ids:
+            if not self._note_exists(zk_id):
+                raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
         # read the previous note
-        filename = Path(str(zk_id)).with_suffix(".md")
-        note_path = self.vault / filename
-        note = self.note_obj.read(path=note_path,
-                                  parsing_obj=self.header_obj,
-                                  delimiter=self.delimiter,
-                                  special_names=self.special_values,
-                                  header=self.header,
-                                  link_del=self.link_del,
-                                  strict=strict,
-                                  quiet=True)
+        filenames = [Path(str(zk_id)).with_suffix(".md") for zk_id in zk_ids]
+        notes = []
+        for filename in filenames:
+            note_path = self.vault / filename
+            note = self.note_obj.read(path=note_path,
+                                      parsing_obj=self.header_obj,
+                                      delimiter=self.delimiter,
+                                      special_names=self.special_values,
+                                      header=self.header,
+                                      link_del=self.link_del,
+                                      strict=strict,
+                                      quiet=True)
+            notes.append(note)
 
         # get links and other metadata
-        links = copy(note.links)
-        tags = copy(note.tags)
-        author = note.author
+        links = set()
+        tags = set()
+        for note in notes:
+            links = links.union(note.links)
+            tags = tags.union(note.tags)
+        author = notes[0].author
 
         # new note
         tmp_note = self.note_obj.new(title, author)
@@ -630,17 +637,21 @@ class Zettelkasten(GitMixin):
             f.write(new_note.materialize())
 
         # add link to new note to the body of old note
-        note.body += "\n"
-        note.body += "- " + f"[[{new_note.sluggify()}]]"
-        note.links = list(note.links)
-        note.links.append(new_note.sluggify())
+        for note in notes:
+            filename = Path(str(note.zk_id)).with_suffix(".md")
+            note_path = self.vault / filename
+            note.body += "\n"
+            note.body += "- " + f"[[{new_note.sluggify()}]]"
+            note.links = list(note.links)
+            note.links.append(new_note.sluggify())
+            note.links = set(note.links)
 
-        # save the modified note
-        with open(note_path, "w") as f:
-            f.write(note.materialize())
+            # save the modified note
+            with open(note_path, "w") as f:
+                f.write(note.materialize())
 
-        # add to index the modified old note
-        self.dbmanager.update_note_to_index(note)
+            # add to index the modified old note
+            self.dbmanager.update_note_to_index(note)
 
         # update .last file
         self._add_last_opened(new_filename)
