@@ -230,19 +230,24 @@ class SubcommandsMixin:
             for col in result:
                 if col in ['tag', 'link']:
                     continue
-                text = color(col, _COLORS.get(col, "WHITE"),
-                             no_color=args.no_color)
                 distance = " " * (max_length - len(col))
-                print(f"{text}: {distance}{result[col]}")
+                text = f"{col}: {distance}{result[col]}"
+                colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                     no_color=args.no_color)
+                print(colored_text)
             for col in ['tag', 'link']:
                 length_text = len(col+": ")
                 elements = list(result[col])
-                text = color(col, _COLORS.get(col, "WHITE"),
-                             no_color=args.no_color)
                 distance = " " * (max_length - len(col))
-                print(f"{text}: {distance}{elements[0]}")
+                text = f"{col}: {distance}{elements[0]}"
+                colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                     no_color=args.no_color)
+                print(colored_text)
                 for el in elements[1:]:
-                    print(distance + " "*length_text + el)
+                    text = distance + " "*length_text + el
+                    colored_text = color(text, _COLORS.get(col, "WHITE"),
+                                         no_color=args.no_color)
+                    print(colored_text)
 
         except TypeError as e:
             print(e)
