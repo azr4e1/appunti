@@ -1,6 +1,7 @@
 import curses
 from enum import IntEnum
 import re
+from collections import defaultdict
 
 from notepy.zettelkasten.zettelkasten import Zettelkasten
 
@@ -15,6 +16,8 @@ class OddKeys(IntEnum):
     ALT_ENTER_1 = 10
     ALT_ENTER_2 = 13
     TAB = 9
+    MULTI_SELECTION = 42
+    CTRL_A = 1
 
 
 # TODO: add window to the right containing metadata information if there is enough space
@@ -29,13 +32,14 @@ class Interactive:
         self.relative_cursor = 0
         self.relative_start = 0
         self.prev_relative_start = 0
+        self.selection = defaultdict(int)
         curses.start_color()
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
     def print_results(self, results, pos):
         curses.curs_set(False)
-        template = "  {}"
+        template = " {}{}"
         for i in range(POSITION_OFFSET, curses.LINES):
             text = self.pad_results(i+self.relative_start, results, template)
             self.w.addstr(i, 0, text)
@@ -58,6 +62,15 @@ class Interactive:
         match c:
             case curses.KEY_ENTER | OddKeys.ALT_ENTER_1 | OddKeys.ALT_ENTER_2:
                 endit = True
+            case OddKeys.MULTI_SELECTION:
+                self.selection[pos] = 1-self.selection[pos]
+                redraw = True
+            case OddKeys.CTRL_A:
+                if all(self.selection.values()):
+                    self.selection = defaultdict(int)
+                else:
+                    self.selection = defaultdict(lambda: 1)
+                redraw = True
             case curses.KEY_UP:
                 pos -= 1
             case curses.KEY_DOWN:
@@ -76,6 +89,7 @@ class Interactive:
                 if text != new_text:
                     pos = 0
                     self.relative_start = 0
+                    self.selection = defaultdict(int)
                     redraw = True
                 text = new_text
             case curses.KEY_DC:
@@ -83,6 +97,7 @@ class Interactive:
                 if text != new_text:
                     pos = 0
                     self.relative_start = 0
+                    self.selection = defaultdict(int)
                     redraw = True
                 text = new_text
             case curses.KEY_LEFT:
@@ -98,6 +113,7 @@ class Interactive:
                     self.cursor_pos += 1
                 pos = 0
                 self.relative_start = 0
+                self.selection = defaultdict(int)
                 redraw = True
 
         return text, pos, endit, redraw
@@ -184,13 +200,15 @@ class Interactive:
 
         return padded_text[:curses.COLS-1]
 
-    @staticmethod
-    def pad_results(draw_pos, results, template):
+    def pad_results(self, draw_pos, results, template):
         if draw_pos < len(results)+POSITION_OFFSET:
-            title = results[draw_pos-POSITION_OFFSET][0]
-            text = Interactive.pad_text(template.format(title))
+            index = draw_pos - POSITION_OFFSET
+            title = results[index][0]
+            selection_indicator = "*" if self.selection[index] else " "
+            text = self.pad_text(template.format(selection_indicator,
+                                 title))
         else:
-            text = Interactive.pad_text(" ")
+            text = self.pad_text(" ")
 
         return text
 
@@ -245,7 +263,17 @@ class Interactive:
         # if escape was pressed and there are results, return
         # the note ID.
         if len(result_list) > 0 and c != OddKeys.ESCAPE:
-            return result_list[pos][1]
+            final_result = []
+            if not any(self.selection.values()):
+                final_result.append(result_list[pos][1])
+            else:
+                for index, el in enumerate(result_list):
+                    if self.selection[index]:
+                        final_result.append(el[1])
+            with open("/home/ld/log", "a") as f:
+                f.write(str(final_result)+"\n")
+
+            return final_result
 
     def run(self):
         try:
