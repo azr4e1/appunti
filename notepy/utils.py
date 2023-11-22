@@ -3,8 +3,8 @@ from threading import Thread
 import time
 from functools import wraps
 
-from collections.abc import Callable
-from typing import Optional, Protocol, Any, ParamSpec, TypeVar, TypeAlias
+from collections.abc import Callable, MutableMapping
+from typing import Optional, Any, ParamSpec, TypeVar, TypeAlias
 
 
 _WAIT_TIME = 0.08
@@ -17,22 +17,14 @@ DecoratedFunc: TypeAlias = Callable[Param, RetType]
 Decorator: TypeAlias = Callable[[OriginalFunc], DecoratedFunc]
 
 
-class ThreadType(Protocol):
-    @property
-    def _target(self) -> Any: return None
-
-    @property
-    def _args(self) -> Any: return None
-
-    @property
-    def _kwargs(self) -> Any: return None
-
-
-class PropagatingThread(ThreadType, Thread):
+class PropagatingThread(Thread):
     """
     Thread subclasses to propagate exceptions in the parent context.
     From: https://stackoverflow.com/questions/2829329/catch-a-threads-exception-in-the-caller-thread
     """
+    _target: Callable[[Any], Any]
+    _args: list[Any]
+    _kwargs: MutableMapping[str, Any]
 
     def run(self) -> None:
         self.exc = None
