@@ -1,6 +1,9 @@
 from pathlib import Path
 from collections.abc import MutableMapping
 from typing import Any
+from importlib.metadata import version
+
+_PROG_NAME = 'notepy'
 
 
 _COMMANDS: MutableMapping[str, Any] = {
@@ -240,5 +243,9 @@ _COMMANDS: MutableMapping[str, Any] = {
         "type": str,
         "nargs": 1,
         "help": "Editor to use."
+    },
+    "flag_version": {
+        "action": "version",
+        "version": '%(prog)s {version}'.format(version=version(_PROG_NAME))
     }
 }

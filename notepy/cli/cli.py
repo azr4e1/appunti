@@ -313,6 +313,7 @@ class Cli(SubcommandsMixin):
     flag_autocommit: MutableMapping[str, Any]
     flag_autosync: MutableMapping[str, Any]
     flag_editor: MutableMapping[str, Any]
+    flag_version: MutableMapping[str, Any]
 
     def __post_init__(self) -> None:
         # define global parser
