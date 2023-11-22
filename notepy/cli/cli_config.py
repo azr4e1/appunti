@@ -102,7 +102,7 @@ _COMMANDS: MutableMapping[str, Any] = {
                 "type": str,
                 "default": None
             },
-            "--id": {
+            "--zk_id": {
                 "help": "filter the list by these ids.",
                 "nargs": "+",
                 "type": str,

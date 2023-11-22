@@ -144,7 +144,7 @@ class SubcommandsMixin:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
             results = my_zk.list_notes(args.title,
-                                       args.id,
+                                       args.zk_id,
                                        args.author_name,
                                        args.tags,
                                        args.links,
