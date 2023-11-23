@@ -37,7 +37,7 @@ class SubcommandsMixin:
         print("Function not implemented.")
 
     @staticmethod
-    def _get_zk_id(args: Namespace, my_zk: Zettelkasten) -> Optional[list[int]]:
+    def _get_zk_id(args: Namespace, my_zk: Zettelkasten) -> Optional[list[str]]:
         if args.zk_id is None or not args.zk_id:
             loop = Interactive(my_zk)
             zk_id = loop.run()
@@ -45,7 +45,7 @@ class SubcommandsMixin:
             try:
                 zk_id = []
                 for id in args.zk_id:
-                    zk_id.append(my_zk.get_last() if id == -1 else id)
+                    zk_id.append(my_zk.get_last() if id == "-1" else id)
             except zk.ZettelkastenException as e:
                 print(e)
                 return None
@@ -149,7 +149,7 @@ class SubcommandsMixin:
         if len(zk_ids) == 1:
             # single note deletion
             @spinner("Deleting note...", "Deleted note {}.", format=True)
-            def decorated_delete() -> int:
+            def decorated_delete() -> str:
                 my_zk.delete(zk_ids[0])
                 return zk_ids[0]
         else:
@@ -172,7 +172,7 @@ class SubcommandsMixin:
 
     @staticmethod
     def _pretty_print(header_names: list[str],
-                      results: list[tuple[str | int, ...]],
+                      results: list[tuple[str, ...]],
                       no_header: bool = False,
                       no_color: bool = False) -> None:
         if not no_header:
@@ -226,7 +226,7 @@ class SubcommandsMixin:
     @staticmethod
     def _info_helper(args: Namespace,
                      my_zk: Zettelkasten,
-                     zk_id: int) -> None:
+                     zk_id: str) -> None:
         result = my_zk.get_metadata(zk_id)
         columns = list(result.keys())
         max_length = len(max(columns, key=len)) + _TAB_LENGTH

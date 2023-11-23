@@ -41,7 +41,7 @@ class Interactive:
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
     def print_results(self,
-                      results: list[tuple[str | int, ...]],
+                      results: list[tuple[str, ...]],
                       pos: int) -> None:
         curses.curs_set(False)
         template = " {}{}"
@@ -128,7 +128,7 @@ class Interactive:
 
     def check_pos(self,
                   pos: int,
-                  results: list[tuple[str | int, ...]]) -> tuple[int, bool]:
+                  results: list[tuple[str, ...]]) -> tuple[int, bool]:
         length = len(results)
         redraw = False
         current_position = pos - self.relative_start + POSITION_OFFSET
@@ -213,7 +213,7 @@ class Interactive:
         return padded_text[:curses.COLS-1]
 
     def pad_results(self, draw_pos: int,
-                    results: list[tuple[str | int, ...]],
+                    results: list[tuple[str, ...]],
                     template: str) -> str:
         if draw_pos < len(results)+POSITION_OFFSET:
             index = draw_pos - POSITION_OFFSET
@@ -226,7 +226,7 @@ class Interactive:
 
         return text
 
-    def _main(self) -> Optional[list[int]]:
+    def _main(self) -> Optional[list[str]]:
         # clear screen
         self.w.clear()
         # show cursor
@@ -285,11 +285,11 @@ class Interactive:
                     if self.selection[index]:
                         final_result.append(el[1])
 
-            return cast(list[int], final_result)
+            return final_result
 
         return None
 
-    def run(self) -> Optional[list[int]]:
+    def run(self) -> Optional[list[str]]:
         try:
             curses.noecho()
             curses.cbreak()

@@ -42,7 +42,7 @@ class Zettelkasten(GitMixin):
     delimiter: str = "---"
     header: str = "# "
     link_del: tuple[str, str] = ('[[', ']]')
-    special_values: Collection[str] = ('date', 'last', 'tags', 'zk_id')
+    special_values: Collection[str] = ('date', 'last', 'tags')
 
     def __post_init__(self) -> None:
         self.vault = Path(self.vault).expanduser()
@@ -237,6 +237,19 @@ class Zettelkasten(GitMixin):
                 print("Title is already in use in another note. Please consider changing it "
                       "to something different, as it may cause ambiguous links in your vault.")
 
+    def _generate_hash_collision_free_note(self, note: Note) -> Note:
+        """
+        Prevent hash collision if generated id is already present.
+        """
+        zk_id = note.zk_id
+        note_date = note.date
+        all_zk_ids = [zk_id[0] for zk_id in self.dbmanager.get_zk_id()]
+        while zk_id in all_zk_ids:
+            zk_id = note._generate_id(note_date)
+        note.zk_id = zk_id
+
+        return note
+
     def new(self,
             title: str,
             author: Optional[str] = None,
@@ -259,14 +272,15 @@ class Zettelkasten(GitMixin):
             author = self.author
 
         # new note
-        tmp_note = self.note_obj.new(title, author)
+        tmp_note = self._generate_hash_collision_free_note(
+            self.note_obj.new(title, author))
 
         # create new note
         new_note = self._edit_temporary_note(tmp_note, confirmation, strict)
         if new_note is None:
             return None
 
-        filename = Path(str(new_note.zk_id)).with_suffix(".md")
+        filename = Path(new_note.zk_id).with_suffix(".md")
 
         note_path = self.vault / filename
         self.dbmanager.add_to_index(new_note)
@@ -283,7 +297,7 @@ class Zettelkasten(GitMixin):
                              commit=self.autocommit,
                              push=self.autosync)
 
-    def update(self, zk_id: int, confirmation: bool = False, strict: bool = False) -> None:
+    def update(self, zk_id: str, confirmation: bool = False, strict: bool = False) -> None:
         """
         Update the note corresponding to the provded ID.
 
@@ -298,7 +312,7 @@ class Zettelkasten(GitMixin):
             raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
         # read the note
-        filename = Path(str(zk_id)).with_suffix(".md")
+        filename = Path(zk_id).with_suffix(".md")
         note_path = self.vault / filename
         note = self.note_obj.read(path=note_path,
                                   parsing_obj=self.header_obj,
@@ -328,7 +342,7 @@ class Zettelkasten(GitMixin):
                              commit=self.autocommit,
                              push=self.autosync)
 
-    def open(self, zk_id: list[int]) -> None:
+    def open(self, zk_id: list[str]) -> None:
         # check if vault is a zettelkasten
         self._check_zettelkasten()
 
@@ -343,7 +357,7 @@ class Zettelkasten(GitMixin):
         editor = Editor(self.editor)
         editor.multiple_edit(filenames, self.vault)
 
-    def delete(self, zk_id: int, confirmation: bool = False) -> None:
+    def delete(self, zk_id: str, confirmation: bool = False) -> None:
         """
         Delete a note.
 
@@ -357,7 +371,7 @@ class Zettelkasten(GitMixin):
         if not self._note_exists(zk_id):
             raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
-        filename = Path(str(zk_id)).with_suffix(".md")
+        filename = Path(zk_id).with_suffix(".md")
         note_path = self.vault / filename
 
         # ask for confirmation
@@ -375,7 +389,7 @@ class Zettelkasten(GitMixin):
                              commit=self.autocommit,
                              push=self.autosync)
 
-    def _delete_single_note(self, zk_id: int) -> int:
+    def _delete_single_note(self, zk_id: str) -> int:
         """
         Helper function.
 
@@ -386,7 +400,7 @@ class Zettelkasten(GitMixin):
             print(f"Note '{zk_id}' does not exist.")
             return 0
 
-        filename = Path(str(zk_id)).with_suffix(".md")
+        filename = Path(zk_id).with_suffix(".md")
         note_path = self.vault / filename
 
         # remove from index
@@ -398,7 +412,7 @@ class Zettelkasten(GitMixin):
         return 1
 
     def delete_multiple(self,
-                        zk_ids: list[int],
+                        zk_ids: list[str],
                         confirmation: bool = False) -> int:
         """
         Delete multiple notes in parallel.
@@ -426,7 +440,7 @@ class Zettelkasten(GitMixin):
 
     def list_notes(self,
                    title: Optional[list[str]] = None,
-                   zk_id: Optional[list[int]] = None,
+                   zk_id: Optional[list[str]] = None,
                    author: Optional[list[str]] = None,
                    tags: Optional[list[str]] = None,
                    links: Optional[list[str]] = None,
@@ -434,7 +448,7 @@ class Zettelkasten(GitMixin):
                    # access_date: Optional[list[str]] = None,
                    sort_by: Optional[str] = None,
                    descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str | int, ...]]:
+                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
         """
         List and filter based on tags, links and date
         """
@@ -453,13 +467,13 @@ class Zettelkasten(GitMixin):
 
         return results
 
-    def _note_exists(self, zk_id: int) -> bool:
-        filename = Path(str(zk_id)).with_suffix(".md")
+    def _note_exists(self, zk_id: str) -> bool:
+        filename = Path(zk_id).with_suffix(".md")
         path = self.vault / filename
 
         return path.is_file()
 
-    def print_note(self, zk_id: int) -> str:
+    def print_note(self, zk_id: str) -> str:
         """
         Print the content of the note with the corresponding ID.
 
@@ -472,7 +486,7 @@ class Zettelkasten(GitMixin):
         if not self._note_exists(zk_id):
             raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
-        filename = Path(str(zk_id)).with_suffix(".md")
+        filename = Path(zk_id).with_suffix(".md")
         note_path = self.vault / filename
         note = self.note_obj.read(path=note_path,
                                   parsing_obj=self.header_obj,
@@ -546,7 +560,7 @@ class Zettelkasten(GitMixin):
         for note in notes:
             self.dbmanager.add_to_index(note)
 
-    def get_last(self) -> int:
+    def get_last(self) -> str:
         """
         Get ID of the last note as saved in .last.
 
@@ -560,10 +574,10 @@ class Zettelkasten(GitMixin):
             raise ZettelkastenException(".last file not found")
 
         try:
-            last_content = int(self.last
-                               .read_text()
-                               .strip()
-                               .removesuffix(".md"))
+            last_content = (self.last
+                            .read_text()
+                            .strip()
+                            .removesuffix(".md"))
         except TypeError:
             raise ZettelkastenException(".last file is malformatted or empty.")
         except ValueError:
@@ -572,7 +586,7 @@ class Zettelkasten(GitMixin):
         return last_content
 
     def next(self, title: str,
-             zk_ids: list[int],
+             zk_ids: list[str],
              confirmation: bool = False,
              strict: bool = False) -> None:
         """
@@ -592,8 +606,8 @@ class Zettelkasten(GitMixin):
             if not self._note_exists(zk_id):
                 raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
-        # read the previous note
-        filenames = [Path(str(zk_id)).with_suffix(".md") for zk_id in zk_ids]
+        # read the previous notes
+        filenames = [Path(zk_id).with_suffix(".md") for zk_id in zk_ids]
         notes = []
         for filename in filenames:
             note_path = self.vault / filename
@@ -616,7 +630,8 @@ class Zettelkasten(GitMixin):
         author = notes[0].author
 
         # new note
-        tmp_note = self.note_obj.new(title, author)
+        tmp_note = self._generate_hash_collision_free_note(
+            self.note_obj.new(title, author))
         tmp_note.tags = tags
 
         tmp_note.body += "\n"
@@ -627,7 +642,7 @@ class Zettelkasten(GitMixin):
         if new_note is None:
             return None
 
-        new_filename = Path(str(new_note.zk_id)).with_suffix(".md")
+        new_filename = Path(new_note.zk_id).with_suffix(".md")
 
         new_note_path = self.vault / new_filename
         self.dbmanager.add_to_index(new_note)
@@ -638,7 +653,7 @@ class Zettelkasten(GitMixin):
 
         # add link to new note to the body of old note
         for note in notes:
-            filename = Path(str(note.zk_id)).with_suffix(".md")
+            filename = Path(note.zk_id).with_suffix(".md")
             note_path = self.vault / filename
             note.body += "\n"
             note.body += "- " + f"[[{new_note.sluggify()}]]"
@@ -662,7 +677,7 @@ class Zettelkasten(GitMixin):
                              commit=self.autocommit,
                              push=self.autosync)
 
-    def get_metadata(self, zk_id: int) -> MutableMapping[str, Any]:
+    def get_metadata(self, zk_id: str) -> MutableMapping[str, Any]:
         # check if vault is a zettelkasten
         self._check_zettelkasten()
         # check that the note exists

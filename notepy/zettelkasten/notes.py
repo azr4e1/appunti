@@ -9,8 +9,10 @@ from typing import Any
 from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import dataclass, fields
-from string import punctuation
+from string import punctuation, ascii_letters
 from pathlib import Path
+from hashlib import md5
+import random
 
 from notepy.parser.parser import HeaderParser, BodyParser
 
@@ -100,7 +102,7 @@ class Note(BaseNote):
     author: str
     date: datetime
     last: datetime
-    zk_id: int
+    zk_id: str
     tags: Collection[str]
     links: Collection[str]
     body: str
@@ -243,7 +245,7 @@ class Note(BaseNote):
         return metadata
 
     @staticmethod
-    def _generate_id(date: datetime) -> int:
+    def _generate_id(date: datetime) -> str:
         """
         Generate the id for a singe note.
 
@@ -251,9 +253,12 @@ class Note(BaseNote):
         :return: the note ID
         """
 
-        date_formatted = int(date.strftime("%Y%m%d%H%M%S"))
+        date_formatted = date.strftime("%Y%m%d%H%M%S")
+        salt = ''.join(random.choice(ascii_letters) for i in range(16))
 
-        return date_formatted
+        id = md5((date_formatted+salt).encode()).hexdigest()
+
+        return id
 
 
 class NoteException(Exception):

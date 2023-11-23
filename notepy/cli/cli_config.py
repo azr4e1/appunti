@@ -50,7 +50,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "zk_id": {
                 "help": "ID of the note to open.",
                 "nargs": "*",
-                "type": int
+                "type": str
             },
             "--no-confirmation": {
                 "help": "Whether to ask for confirmation before saving.",
@@ -68,7 +68,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "zk_id": {
                 "help": "ID(s) of the note(s) to open.",
                 "nargs": "*",
-                "type": int
+                "type": str
             }
         }
     },
@@ -78,7 +78,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "zk_id": {
                 "help": "ID of the note(s) to delete.",
                 "nargs": "*",
-                "type": int,
+                "type": str,
             },
             "--no-confirmation": {
                 "help": "Whether to ask for confirmation before saving.",
@@ -92,7 +92,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "zk_id": {
                 "help": "ID of the note to print.",
                 "nargs": "*",
-                "type": int,
+                "type": str,
             }
         }
     },
@@ -189,7 +189,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "--zk_id": {
                 "help": "ID of the note to continue from.",
                 "nargs": 1,
-                "type": int,
+                "type": str,
                 "default": []
             },
             "--no-confirmation": {
@@ -211,7 +211,7 @@ _COMMANDS: MutableMapping[str, Any] = {
             "zk_id": {
                 "help": "ID of the note to print.",
                 "nargs": "*",
-                "type": int,
+                "type": str,
             },
             "--no-color": {
                 "help": "Output without color.",

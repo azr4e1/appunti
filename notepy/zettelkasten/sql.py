@@ -139,7 +139,7 @@ class DBManager:
         except sqlite3.IntegrityError as e:
             raise DBManagerException("SQL error") from e
 
-    def delete_from_index(self, zk_id: int) -> None:
+    def delete_from_index(self, zk_id: str) -> None:
         """
         Delete note from index.
 
@@ -155,7 +155,7 @@ class DBManager:
     # a huge join but build incrementally?
     def list_notes(self,
                    title: Optional[list[str]] = None,
-                   zk_id: Optional[list[int]] = None,
+                   zk_id: Optional[list[str]] = None,
                    author: Optional[list[str]] = None,
                    tag: Optional[list[str]] = None,
                    link: Optional[list[str]] = None,
@@ -163,7 +163,7 @@ class DBManager:
                    # access_date: Optional[list[str]] = None,
                    sort_by: Optional[str] = None,
                    descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str | int, ...]]:
+                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
         """
         """
         query: str = _JOINED_ALL
@@ -216,31 +216,27 @@ class DBManager:
         query = f"SELECT zk_id from {table_name}"
         payload: list[str] = []
         for element in column_values:
-            str_el = str(element)
             query = query_template.format(table_name, query)
-            if str_el.startswith("!"):
+            if element.startswith("!"):
                 query += f" AND zk_id NOT IN (SELECT zk_id FROM {table_name} WHERE {column_name} LIKE ?)"
-                payload.append(str_el.removeprefix("!"))
+                payload.append(element.removeprefix("!"))
             else:
                 query += f" AND {column_name} LIKE ?"
-                payload.append(str_el)
+                payload.append(element)
 
         return query, payload
 
     def get_title(self) -> list[str]:
         with sqlite3.connect(self.index) as conn:
-            results = conn.execute("select title from zettelkasten;").fetchall()
+            results = conn.execute("select title from zettelkasten").fetchall()
 
         return results
 
-    def get_links(self, zk_id: int) -> list[str]:
+    def get_zk_id(self,) -> list[str]:
         """
-        Return all the links associated to an ID.
-
-        :param zk_id: the ID.
         """
         with sqlite3.connect(self.index) as conn:
-            results = conn.execute(_GET_LINKS_ID).fetchall()
+            results = conn.execute("select zk_id from zettelkasten").fetchall()
 
         return results
 

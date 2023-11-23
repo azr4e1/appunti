@@ -67,7 +67,7 @@ class HeaderParser(BaseParser):
 
     def __init__(self, parsing_obj: Collection[str],
                  delimiter: str = '---',
-                 special_names: Collection[str] = ['date', 'last', 'tags', 'zk_id']):
+                 special_names: Collection[str] = ['date', 'last', 'tags']):
         self.parsing_obj = parsing_obj
         self.delimiter = delimiter
         self.special_names = special_names
@@ -177,16 +177,6 @@ class HeaderParser(BaseParser):
         """
         parsed_date = self._date_parser(date)
         return parsed_date
-
-    def _zk_id_parser(self, zk_id: str) -> int:
-        """
-        Turn ID into integer.
-
-        :param zk_id: the ID of the note, as a string.
-        :return: the ID of the note, as an integer.
-        """
-
-        return int(zk_id)
 
     def _tags_parser(self, tags: str) -> set[str]:
         """
