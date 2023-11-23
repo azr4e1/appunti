@@ -27,7 +27,7 @@ _COLORS = {
 }
 
 _TAB_LENGTH = 4
-_SEPARATOR_LENGTH = 33
+_SEPARATOR_LENGTH = 51
 
 
 class SubcommandsMixin:
@@ -224,6 +224,12 @@ class SubcommandsMixin:
         my_zk.multiprocess_index_vault()
 
     @staticmethod
+    @spinner("Committing current changes...", "Commit terminated successfully.")
+    def commit(args: Namespace) -> None:
+        my_zk = SubcommandsMixin._create_zettelkasten(args)
+        my_zk.commit()
+
+    @staticmethod
     def _info_helper(args: Namespace,
                      my_zk: Zettelkasten,
                      zk_id: str) -> None:
@@ -309,6 +315,7 @@ class Cli(SubcommandsMixin):
     command_reindex: MutableMapping[str, Any]
     command_next: MutableMapping[str, Any]
     command_sync: MutableMapping[str, Any]
+    command_commit: MutableMapping[str, Any]
     command_info: MutableMapping[str, Any]
     # command_metadata: MutableMapping[str, Any]
     flag_vault: MutableMapping[str, Any]

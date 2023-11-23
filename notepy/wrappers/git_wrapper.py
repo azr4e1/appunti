@@ -323,6 +323,13 @@ class GitMixin:
         if (git := self._detect_git_repo(self.vault)):
             git.pull()
 
+    def commit(self: GitMixinProtocol) -> None:
+        """
+        commit current changes
+        """
+        if (git := self._detect_git_repo(self.vault)):
+            git.commit_on_change("Committing current changes.")
+
     def sync(self: GitMixinProtocol) -> None:
         """
         Synchronize with remote origin.

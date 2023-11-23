@@ -205,6 +205,9 @@ _COMMANDS: MutableMapping[str, Any] = {
     "command_sync": {
         "help": "Commit and sync with remote repository if available.",
     },
+    "command_commit": {
+        "help": "Commit current changes to repo.",
+    },
     "command_info": {
         "help": "Show metadata for a note.",
         "flags": {
