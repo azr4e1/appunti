@@ -145,7 +145,7 @@ _COMMANDS: MutableMapping[str, Any] = {
                 "help": "sort the list by criteria in ascending order.",
                 "nargs": 1,
                 "type": str,
-                "default": [None],
+                "default": ['creation_date'],
                 "choices": ["title", "author", "zk_id", "tag", "link", "creation_date", "last_changed"]
             },
             "--descending": {
