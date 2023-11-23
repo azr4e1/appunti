@@ -20,12 +20,13 @@ CLI note manager for Zettelkasten-like note-taking.
 - [x] SQLite caching of indexed notes
 - [x] Support for reindexing
   - [ ] support strict mode for reindexing. Perform thorough check of notes validity.
-- [ ] REPL
+- [ ] pager to navigate between notes by following links
 - [x] interactive search
 - [ ] Find broken links
+- [ ] Knowledge graph creation
+- [ ] REPL
 - [ ] Support for using external or internal tool for fuzzy finding/searching
 - [ ] Support for TOML configuration
-- [ ] Knowledge graph creation
 - [ ] Plugin system?
 
 ## Plugins
