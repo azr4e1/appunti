@@ -222,6 +222,16 @@ _COMMANDS: MutableMapping[str, Any] = {
             },
         }
     },
+    "command_navigate": {
+        "help": "Navigate the Zettelkasten.",
+        "flags": {
+            "zk_id": {
+                "help": "ID of the note to show.",
+                "nargs": "*",
+                "type": str
+            }
+        }
+    },
     "flag_vault": {
         "default": ".",
         "type": Path,

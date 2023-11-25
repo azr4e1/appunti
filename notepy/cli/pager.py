@@ -1,198 +1,341 @@
 import curses
-from notepy.zettelkasten import Note, Zettelkasten
+from curses import wrapper
+from notepy.zettelkasten.zettelkasten import Note, Zettelkasten, ZettelkastenException
 from notepy.zettelkasten.notes import sluggify
 from typing import Optional
 from pathlib import Path
 from dataclasses import fields
 import textwrap
+from enum import Enum, IntEnum, auto
 
 
 LINKS_RATIO = 4
 
 
-zk = Zettelkasten("/home/lorenzo/Desktop/Knowledge", "Lorenzo Drumond")
+class Context(Enum):
+    OUT = auto()
+    FRONTMATTER_IN = auto()
+    CODEBLOCK_IN = auto()
+    LINK_IN = auto()
+    BOLD_IN = auto()
+    ITALIC_IN = auto()
+    CODE_IN = auto()
 
 
-def get_id_from_link(link, zk: Zettelkasten) -> Optional[str]:
-    results = zk.list_notes(show=['title', 'zk_id'])
-    titles = [sluggify(title) for title, _ in results]
-    with open("/home/lorenzo/log2", "a") as f:
-        f.write(str(titles)+"\n")
-        f.write(link + "\n")
+class Keybindings(IntEnum):
+    J = ord('j')
+    S_J = ord('J')
+    K = ord('k')
+    S_K = ord('K')
+    C_D = 4
+    C_U = 21
+    G = ord('g')
+    S_G = ord('G')
+    L = ord('l')
+    H = ord('h')
+    S_L = ord('L')
+    S_H = ord('H')
+    SHARP = ord('#')
 
-    try:
-        position = titles.index(link)
-        return results[position][1]
-    except ValueError:
-        return None
 
+class MainWindow:
+    def __init__(self, width: int, content: str):
+        self.width = width
+        self.content = content
+        self.pos = 0
 
-def main(screen):
-    try:
-        curses.noecho()
-        curses.cbreak()
-        screen.keypad(True)
-        curses.curs_set(False)
+        self.lines = self._wrap_content()
+        self.limit = len(self.lines) + 1
+        self.page = curses.LINES // 2
+        self.pad = curses.newpad(self.limit, self.width)
+        self._draw_content()
+        self.refresh()
 
-        screen.refresh()
-        win_width = curses.COLS // LINKS_RATIO
-        win = curses.newwin(curses.LINES, win_width, 0, curses.COLS-win_width)
-        win.border("|", " ", " ", " ", "|", " ", "|", " ")
-        win.refresh()
-        links_pos = 0
-        links = []
-        root = Path("/home/lorenzo/Desktop/Knowledge")
-        file = "4c8579262e8f19ddd7b3ee404821b236.md"
-        filename = root / file
-        parsing_objs = [note_obj.name for note_obj in fields(Note) if note_obj not in ['link', 'body']]
-        note = Note.read(filename, parsing_objs)
-        actual_links = list(note.links)
-        for index, link in enumerate(actual_links):
-            link = f"[{index+1}] " + link
-            wrapped_links = textwrap.wrap(link, win_width-2)
-            for wl in wrapped_links:
-                links.append(wl)
-        links_pad = curses.newpad(len(links)+1, win_width-1)
-        for index, link in enumerate(links):
-            links_pad.addstr(index, 1, link+"\n")
-        links_pad.refresh(links_pos, 0, 0, curses.COLS-win_width+1, curses.LINES, curses.COLS)
-
-        pos = 0
+    def _wrap_content(self) -> list[str]:
         lines = []
-        simple_line = note.materialize().split("\n")
-        for line in simple_line:
+        unwrapped_lines = self.content.split("\n")
+        for line in unwrapped_lines:
             if line == "":
                 lines.append("\n")
             else:
-                for wrapped_line in textwrap.wrap(line, curses.COLS-win_width-1):
+                for wrapped_line in textwrap.wrap(line, self.width):
                     lines.append(wrapped_line)
-        # lines = note.body.split("\n")
-        pad = curses.newpad(len(lines)+1, curses.COLS-win_width)
-        for index, line in enumerate(lines):
-            pad.addstr(index, 0, line)
 
-        pad.refresh(pos, 0, 0, 0, curses.LINES, curses.COLS-win_width-1)
-        # curses.doupdate()
-        # screen.refresh()
-        # win = curses.newwin(len(lines), curses.COLS)
-        # for index, line in enumerate(lines):
-        #     win.addstr(index, 0, line)
-        # win.refresh()
-        while (c := screen.getch()) != ord('q'):
-            if c == ord('j'):
-                pos += 1
-            elif c == ord('k'):
-                pos -= 1
-            elif c == ord('g'):
-                pos = 0
-            elif c == ord('G'):
-                pos = len(lines) - curses.LINES
-                # screen.clear()
-                # screen.refresh()
-            elif c == ord('J'):
-                links_pos += 1
-            elif c == ord('K'):
-                links_pos -= 1
-            elif c == curses.KEY_UP:
-                pos -= 1
-            elif c == curses.KEY_DOWN:
-                pos += 1
-            elif c == curses.KEY_RESIZE:
-                curses.resize_term(*screen.getmaxyx())
-                screen.refresh()
-                win_width = curses.COLS // LINKS_RATIO
-                win = curses.newwin(curses.LINES, win_width, 0, curses.COLS-win_width)
-                win.border("|", " ", " ", " ", "|", " ", "|", " ")
-                links = []
-                for index, link in enumerate(actual_links):
-                    link = f"[{index+1}] " + link
-                    wrapped_links = textwrap.wrap(link, win_width-2)
-                    for wl in wrapped_links:
-                        links.append(wl)
-                links_pad = curses.newpad(len(links)+1, win_width-1)
-                # links_pad.border("|", " ", " ", " ", " ", " ", " ", " ")
-                for index, link in enumerate(links):
-                    links_pad.addstr(index, 1, link+"\n")
-                lines = []
-                for line in simple_line:
-                    if line == "":
-                        lines.append("\n")
-                    else:
-                        for wrapped_line in textwrap.wrap(line, curses.COLS-win_width-1):
-                            lines.append(wrapped_line)
-                pad = curses.newpad(len(lines)+1, curses.COLS-win_width-1)
-                for index, line in enumerate(lines):
-                    pad.addstr(index, 0, line)
-                screen.clear()
-                screen.refresh()
+        return lines
 
+    def _correct_pos(self, pos):
+        if pos < 0:
+            pos = 0
+        elif pos > self.limit - curses.LINES:
+            pos = self.limit - curses.LINES
+
+        return pos
+
+    def scroll_down(self):
+        self.pos = self._correct_pos(self.pos+1)
+        self.refresh()
+
+    def scroll_up(self):
+        self.pos = self._correct_pos(self.pos-1)
+        self.refresh()
+
+    def go_to_start(self):
+        self.pos = 0
+        self.refresh()
+
+    def go_to_end(self):
+        self.pos = self._correct_pos(self.limit-curses.LINES)
+        self.refresh()
+
+    def page_down(self):
+        self.pos = self._correct_pos(self.pos + self.page)
+        self.refresh()
+
+    def page_up(self):
+        self.pos = self._correct_pos(self.pos - self.page)
+        self.refresh()
+
+    def _draw_content(self) -> None:
+
+        context = Context.OUT
+
+        for index, line in enumerate(self.lines):
+            if line == "---" and context is Context.OUT:
+                context = Context.FRONTMATTER_IN
+            elif line == "---" and context is Context.FRONTMATTER_IN:
+                context = Context.OUT
+
+            if line.startswith("```") and context is Context.OUT:
+                context = Context.CODEBLOCK_IN
+            elif line.startswith('```') and context is Context.CODEBLOCK_IN:
+                context = Context.OUT
+
+            if context is Context.FRONTMATTER_IN and line != "---":
+                self.pad.addstr(index, 0, line, curses.color_pair(1))
+            elif context is Context.CODEBLOCK_IN and not line.startswith("```"):
+                self.pad.addstr(index, 0, line, curses.color_pair(3))
+            elif line.startswith('#'):
+                self.pad.addstr(index, 0, line, curses.color_pair(2))
             else:
-                for index, link in enumerate(links):
-                    if index+1 >= 10:
+                self.pad.addstr(index, 0, line)
+
+    def refresh(self):
+        self.pad.refresh(self.pos, 0, 0, 0, curses.LINES-1, self.width)
+
+
+class LinksWindow:
+
+    def __init__(self, width: int, links: list[str]):
+        self.width = width
+        self.links = links
+        self.pos = 0
+
+        self.wrapped_links = self._wrap_links()
+        self.limit = len(self.wrapped_links) + 1
+        self.pad = curses.newpad(self.limit, self.width)
+        self._draw_content()
+        self.refresh()
+
+    def _wrap_links(self) -> list[str]:
+        lines = []
+        for index, line in enumerate(self.links):
+            line_nr = f"[{index+1}] {line}"
+            for wrapped_line in textwrap.wrap(line_nr, self.width):
+                lines.append(wrapped_line)
+
+        return lines
+
+    def _correct_pos(self, pos):
+        if pos < 0:
+            pos = 0
+        elif pos > self.limit - curses.LINES:
+            pos = self.limit - curses.LINES
+
+        return pos
+
+    def scroll_down(self):
+        self.pos = self._correct_pos(self.pos+1)
+        self.refresh()
+
+    def scroll_up(self):
+        self.pos = self._correct_pos(self.pos-1)
+        self.refresh()
+
+    def _draw_content(self):
+        for index, line in enumerate(self.wrapped_links):
+            self.pad.addstr(index, 0, line, curses.color_pair(4))
+
+    def refresh(self):
+        self.pad.refresh(self.pos, 0, 0, curses.COLS -
+                         self.width, curses.LINES-1, curses.COLS)
+
+
+class Pager:
+    def __init__(self, zk: Zettelkasten):
+        self.w = curses.initscr()
+        self.zk = zk
+        self.stack = []
+        self.head = -1
+        curses.start_color()
+        # frontmatter
+        curses.init_pair(1, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        # headers
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # code blocks
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        # links
+        curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
+
+        curses.curs_set(False)
+
+    def _check_head(self, head):
+        if head < -1 * len(self.stack):
+            head = -1 * len(self.stack)
+        elif head >= 0:
+            head = -1
+
+        return head
+
+    def _read_note(self, zk_id: str):
+        # check that the note exists
+        if not self.zk._note_exists(zk_id):
+            raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
+
+        filename = self.zk.vault / Path(zk_id).with_suffix(".md")
+        note = Note.read(filename)
+
+        return note
+
+    def get_id_from_link(self, link) -> Optional[str]:
+        results = self.zk.list_notes(show=['title', 'zk_id'])
+        titles = [sluggify(title) for title, _ in results]
+
+        try:
+            position = titles.index(link)
+            return results[position][1]
+        except ValueError:
+            return None
+
+    def next_note(self, zk_id: str,
+                  main_window_width: int,
+                  ratio: int) -> tuple[MainWindow, LinksWindow, list[str]]:
+        self.w.clear()
+        self.w.refresh()
+        note = self._read_note(zk_id)
+        main_window = MainWindow(main_window_width, note.materialize())
+        links_window = LinksWindow(ratio, list(note.links))
+        link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 9))]
+
+        return main_window, links_window, link_nr
+
+    def _main(self) -> None:
+        self.w.clear()
+        self.w.refresh()
+        ratio = curses.COLS // LINKS_RATIO
+        main_window_width = curses.COLS - ratio - 1
+        if len(self.stack) == 0:
+            raise ValueError
+        note = self._read_note(self.stack[self.head])
+        zk_id = self.stack[self.head]
+        main_window, links_window, link_nr = self.next_note(zk_id,
+                                                            main_window_width,
+                                                            ratio)
+        while (c := self.w.getch()) != ord('q'):
+            match c:
+                case Keybindings.J | curses.KEY_DOWN:
+                    main_window.scroll_down()
+                case Keybindings.K | curses.KEY_UP:
+                    main_window.scroll_up()
+                case Keybindings.G | curses.KEY_HOME:
+                    main_window.go_to_start()
+                case Keybindings.S_G | curses.KEY_END:
+                    main_window.go_to_end()
+                case Keybindings.C_D | curses.KEY_PPAGE:
+                    main_window.page_down()
+                case Keybindings.C_U | curses.KEY_NPAGE:
+                    main_window.page_up()
+                case Keybindings.S_J:
+                    links_window.scroll_down()
+                case Keybindings.S_K:
+                    links_window.scroll_up()
+                case Keybindings.H | curses.KEY_LEFT:
+                    prev_head = self.head
+                    self.head = self._check_head(self.head-1)
+                    if prev_head == self.head:
                         continue
-                    if c == ord(str(index+1)):
-                        new_id = get_id_from_link(actual_links[index], zk)
-                        if new_id is None:
-                            continue
-                        pos = 0
-                        links_pos = 0
-                        filename = root / Path(new_id).with_suffix(".md")
-                        note = Note.read(filename, parsing_objs)
-                        screen.clear()
-                        screen.refresh()
-                        win_width = curses.COLS // LINKS_RATIO
-                        win = curses.newwin(curses.LINES, win_width, 0, curses.COLS-win_width)
-                        win.border("|", " ", " ", " ", "|", " ", "|", " ")
-                        win.refresh()
-                        links_pos = 0
-                        links = []
-                        actual_links = list(note.links)
-                        for index, link in enumerate(actual_links):
-                            link = f"[{index+1}] " + link
-                            wrapped_links = textwrap.wrap(link, win_width-2)
-                            for wl in wrapped_links:
-                                links.append(wl)
-                        links_pad = curses.newpad(len(links)+1, win_width-1)
-                        for index, link in enumerate(links):
-                            links_pad.addstr(index, 1, link+"\n")
-                        # links_pad.refresh(links_pos, 0, 0, curses.COLS-win_width+1, curses.LINES, curses.COLS)
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+                case Keybindings.L | curses.KEY_RIGHT:
+                    prev_head = self.head
+                    self.head = self._check_head(self.head+1)
+                    if prev_head == self.head:
+                        continue
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+                case Keybindings.S_H:
+                    prev_head = self.head
+                    self.head = 0
+                    if prev_head == self.head:
+                        continue
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+                case Keybindings.S_L:
+                    prev_head = self.head
+                    self.head = -1
+                    if prev_head == self.head:
+                        continue
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+                case curses.KEY_RESIZE:
+                    curses.resize_term(*self.w.getmaxyx())
+                    self.w.refresh()
+                    ratio = curses.COLS // 4
+                    main_window_width = curses.COLS - ratio - 1
+                    main_window = MainWindow(main_window_width, note.materialize())
+                    links_window = LinksWindow(ratio, list(note.links))
+                case c if c in link_nr:
+                    link = links_window.links[int(chr(c))-1]
+                    zk_id = self.get_id_from_link(link)
+                    if zk_id is None:
+                        continue
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
 
-                        pos = 0
-                        lines = []
-                        simple_line = note.materialize().split("\n")
-                        for line in simple_line:
-                            if line == "":
-                                lines.append("\n")
-                            else:
-                                for wrapped_line in textwrap.wrap(line, curses.COLS-win_width-1):
-                                    lines.append(wrapped_line)
-                        # lines = note.body.split("\n")
-                        pad = curses.newpad(len(lines)+1, curses.COLS-win_width)
-                        for index, line in enumerate(lines):
-                            pad.addstr(index, 0, line)
+                    self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
+                    self.stack.append(zk_id)
+                    self.head = -1
+                case Keybindings.SHARP:
+                    pass
+                case _:
+                    pass
 
-                        # pad.refresh(pos, 0, 0, 0, curses.LINES, curses.COLS-win_width-1)
-                        break
+            # screen.clear()
+            main_window.refresh()
+            links_window.refresh()
+            self.w.refresh()
 
-            if pos < 0:
-                pos = 0
-            elif pos >= len(lines)-1:
-                pos = len(lines)-2
-            if links_pos < 0:
-                links_pos = 0
-            elif links_pos >= len(links):
-                links_pos = len(links)-1
-            win.refresh()
-            pad.refresh(pos, 0, 0, 0, curses.LINES-1, curses.COLS-win_width-1)
-            links_pad.refresh(links_pos, 0, 0, curses.COLS-win_width+1, curses.LINES, curses.COLS)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        curses.nocbreak()
-        screen.keypad(False)
-        curses.echo()
-        curses.endwin()
+    def run(self, zk_ids: list[str]):
+        try:
+            curses.noecho()
+            curses.cbreak()
+            self.w.keypad(True)
 
+            self.stack = zk_ids
+            return self._main()
 
-screen = curses.initscr()
-main(screen)
+        except KeyboardInterrupt:
+            return None
+        finally:
+            curses.nocbreak()
+            self.w.keypad(False)
+            curses.echo()
+            curses.endwin()

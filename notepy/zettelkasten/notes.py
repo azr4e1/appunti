@@ -95,7 +95,6 @@ class Note(BaseNote):
     :param zk_id: unique id of the note, in the form %Y%m%d%H%M%S
     :param tags: tags of the note
     :param links: links the note points to
-    :param frontmatter: the whole frontmatter of the note
     :param body: the whole body of the note
     """
     title: str
@@ -127,7 +126,7 @@ class Note(BaseNote):
     @classmethod
     def read(cls,
              path: str | Path,
-             parsing_obj: Collection[str],
+             parsing_obj: Collection[str] = ['title', 'author', 'date', 'last', 'zk_id', 'tags'],
              delimiter: str = "---",
              special_names: Collection[str] = ("date", "last", "tags", 'zk_id'),
              header: str = "# ",

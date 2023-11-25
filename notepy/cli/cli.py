@@ -14,6 +14,7 @@ from notepy.utils import spinner, ask_for_confirmation
 from notepy.zettelkasten.sql import DBManagerException
 from notepy.cli.colors import color
 from notepy.cli.interactive_selection import Interactive
+from notepy.cli.pager import Pager
 
 
 _COLORS = {
@@ -275,6 +276,20 @@ class SubcommandsMixin:
             print(e)
 
     @staticmethod
+    def navigate(args: Namespace) -> None:
+        my_zk = SubcommandsMixin._create_zettelkasten(args)
+        try:
+            zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
+            if zk_ids is None or not zk_ids:
+                return
+            loop = Pager(my_zk)
+            loop.run(zk_ids)
+        except TypeError as e:
+            print(e)
+        except zk.ZettelkastenException as e:
+            print(e)
+
+    @staticmethod
     def list(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
@@ -317,6 +332,7 @@ class Cli(SubcommandsMixin):
     command_sync: MutableMapping[str, Any]
     command_commit: MutableMapping[str, Any]
     command_info: MutableMapping[str, Any]
+    command_navigate: MutableMapping[str, Any]
     # command_metadata: MutableMapping[str, Any]
     flag_vault: MutableMapping[str, Any]
     flag_author: MutableMapping[str, Any]
