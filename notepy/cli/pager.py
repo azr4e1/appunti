@@ -1,12 +1,13 @@
 import curses
-from curses import wrapper
-from notepy.zettelkasten.zettelkasten import Note, Zettelkasten, ZettelkastenException
-from notepy.zettelkasten.notes import sluggify
-from typing import Optional
 from pathlib import Path
-from dataclasses import fields
 import textwrap
 from enum import Enum, IntEnum, auto
+
+from typing import Optional
+
+from notepy.zettelkasten.zettelkasten import Note, Zettelkasten, ZettelkastenException
+from notepy.zettelkasten.notes import sluggify
+from notepy.cli.interactive_selection import Interactive
 
 
 LINKS_RATIO = 4
@@ -36,6 +37,7 @@ class Keybindings(IntEnum):
     S_L = ord('L')
     S_H = ord('H')
     SHARP = ord('#')
+    S = ord('s')
 
 
 class MainWindow:
@@ -174,7 +176,7 @@ class Pager:
     def __init__(self, zk: Zettelkasten):
         self.w = curses.initscr()
         self.zk = zk
-        self.stack = []
+        self.stack: list[str] = []
         self.head = -1
         curses.start_color()
         # frontmatter
@@ -218,7 +220,7 @@ class Pager:
 
     def next_note(self, zk_id: str,
                   main_window_width: int,
-                  ratio: int) -> tuple[MainWindow, LinksWindow, list[str]]:
+                  ratio: int) -> tuple[MainWindow, LinksWindow, list[int]]:
         self.w.clear()
         self.w.refresh()
         note = self._read_note(zk_id)
@@ -236,7 +238,7 @@ class Pager:
         if len(self.stack) == 0:
             raise ValueError
         note = self._read_note(self.stack[self.head])
-        zk_id = self.stack[self.head]
+        zk_id: Optional[str] = self.stack[self.head]
         main_window, links_window, link_nr = self.next_note(zk_id,
                                                             main_window_width,
                                                             ratio)
@@ -278,7 +280,7 @@ class Pager:
                                                                         ratio)
                 case Keybindings.S_H:
                     prev_head = self.head
-                    self.head = 0
+                    self.head = -1 * len(self.stack)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
@@ -313,6 +315,23 @@ class Pager:
                     self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
                     self.stack.append(zk_id)
                     self.head = -1
+                case Keybindings.S:
+                    curses.endwin()
+                    loop = Interactive(self.zk)
+                    zk_ids = loop.run()
+                    self.w.refresh()
+                    curses.curs_set(False)
+                    curses.noecho()
+                    curses.cbreak()
+                    self.w.keypad(True)
+                    if zk_ids is None:
+                        continue
+                    self.stack.extend(zk_ids)
+                    self.head = -1
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
                 case Keybindings.SHARP:
                     pass
                 case _:
