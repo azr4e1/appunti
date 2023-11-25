@@ -5,7 +5,8 @@ from enum import Enum, IntEnum, auto
 
 from typing import Optional
 
-from notepy.zettelkasten.zettelkasten import Note, Zettelkasten, ZettelkastenException
+from notepy.zettelkasten.zettelkasten import Zettelkasten, ZettelkastenException
+from notepy.zettelkasten.notes import Note
 from notepy.zettelkasten.notes import sluggify
 from notepy.cli.interactive_selection import Interactive
 
@@ -40,6 +41,10 @@ class Keybindings(IntEnum):
     S = ord('s')
 
 
+class NumberInput:
+    pass
+
+
 class MainWindow:
     def __init__(self, width: int, content: str):
         self.width = width
@@ -65,7 +70,7 @@ class MainWindow:
 
         return lines
 
-    def _correct_pos(self, pos):
+    def _correct_pos(self, pos: int) -> int:
         if pos < 0:
             pos = 0
         elif pos > self.limit - curses.LINES:
@@ -73,27 +78,27 @@ class MainWindow:
 
         return pos
 
-    def scroll_down(self):
+    def scroll_down(self) -> None:
         self.pos = self._correct_pos(self.pos+1)
         self.refresh()
 
-    def scroll_up(self):
+    def scroll_up(self) -> None:
         self.pos = self._correct_pos(self.pos-1)
         self.refresh()
 
-    def go_to_start(self):
+    def go_to_start(self) -> None:
         self.pos = 0
         self.refresh()
 
-    def go_to_end(self):
+    def go_to_end(self) -> None:
         self.pos = self._correct_pos(self.limit-curses.LINES)
         self.refresh()
 
-    def page_down(self):
+    def page_down(self) -> None:
         self.pos = self._correct_pos(self.pos + self.page)
         self.refresh()
 
-    def page_up(self):
+    def page_up(self) -> None:
         self.pos = self._correct_pos(self.pos - self.page)
         self.refresh()
 
@@ -121,13 +126,13 @@ class MainWindow:
             else:
                 self.pad.addstr(index, 0, line)
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.pad.refresh(self.pos, 0, 0, 0, curses.LINES-1, self.width)
 
 
 class LinksWindow:
 
-    def __init__(self, width: int, links: list[str]):
+    def __init__(self, width: int, links: list[str]) -> None:
         self.width = width
         self.links = links
         self.pos = 0
@@ -147,7 +152,7 @@ class LinksWindow:
 
         return lines
 
-    def _correct_pos(self, pos):
+    def _correct_pos(self, pos: int) -> int:
         if pos < 0:
             pos = 0
         elif pos > self.limit - curses.LINES:
@@ -155,19 +160,19 @@ class LinksWindow:
 
         return pos
 
-    def scroll_down(self):
+    def scroll_down(self) -> None:
         self.pos = self._correct_pos(self.pos+1)
         self.refresh()
 
-    def scroll_up(self):
+    def scroll_up(self) -> None:
         self.pos = self._correct_pos(self.pos-1)
         self.refresh()
 
-    def _draw_content(self):
+    def _draw_content(self) -> None:
         for index, line in enumerate(self.wrapped_links):
             self.pad.addstr(index, 0, line, curses.color_pair(4))
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.pad.refresh(self.pos, 0, 0, curses.COLS -
                          self.width, curses.LINES-1, curses.COLS)
 
@@ -178,19 +183,8 @@ class Pager:
         self.zk = zk
         self.stack: list[str] = []
         self.head = -1
-        curses.start_color()
-        # frontmatter
-        curses.init_pair(1, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
-        # headers
-        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        # code blocks
-        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        # links
-        curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
 
-        curses.curs_set(False)
-
-    def _check_head(self, head):
+    def _check_head(self, head: int) -> int:
         if head < -1 * len(self.stack):
             head = -1 * len(self.stack)
         elif head >= 0:
@@ -198,7 +192,7 @@ class Pager:
 
         return head
 
-    def _read_note(self, zk_id: str):
+    def _read_note(self, zk_id: str) -> Note:
         # check that the note exists
         if not self.zk._note_exists(zk_id):
             raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
@@ -208,7 +202,7 @@ class Pager:
 
         return note
 
-    def get_id_from_link(self, link) -> Optional[str]:
+    def get_id_from_link(self, link: str) -> Optional[str]:
         results = self.zk.list_notes(show=['title', 'zk_id'])
         titles = [sluggify(title) for title, _ in results]
 
@@ -230,15 +224,30 @@ class Pager:
 
         return main_window, links_window, link_nr
 
-    def _main(self) -> None:
-        self.w.clear()
+    def _setup(self) -> None:
+        # frontmatter
+        curses.init_pair(1, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        # headers
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # code blocks
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        # links
+        curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
+
+        curses.curs_set(False)
+        curses.noecho()
+        curses.cbreak()
+        self.w.keypad(True)
+
         self.w.refresh()
+
+    def _main(self) -> None:
         ratio = curses.COLS // LINKS_RATIO
         main_window_width = curses.COLS - ratio - 1
         if len(self.stack) == 0:
             raise ValueError
         note = self._read_note(self.stack[self.head])
-        zk_id: Optional[str] = self.stack[self.head]
+        zk_id: str = self.stack[self.head]
         main_window, links_window, link_nr = self.next_note(zk_id,
                                                             main_window_width,
                                                             ratio)
@@ -305,9 +314,10 @@ class Pager:
                     links_window = LinksWindow(ratio, list(note.links))
                 case c if c in link_nr:
                     link = links_window.links[int(chr(c))-1]
-                    zk_id = self.get_id_from_link(link)
-                    if zk_id is None:
+                    tmp_res = self.get_id_from_link(link)
+                    if tmp_res is None:
                         continue
+                    zk_id = tmp_res
                     main_window, links_window, link_nr = self.next_note(zk_id,
                                                                         main_window_width,
                                                                         ratio)
@@ -319,19 +329,14 @@ class Pager:
                     curses.endwin()
                     loop = Interactive(self.zk)
                     zk_ids = loop.run()
-                    self.w.refresh()
-                    curses.curs_set(False)
-                    curses.noecho()
-                    curses.cbreak()
-                    self.w.keypad(True)
-                    if zk_ids is None:
-                        continue
-                    self.stack.extend(zk_ids)
-                    self.head = -1
-                    zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    self._setup()
+                    if zk_ids is not None:
+                        self.stack.extend(zk_ids)
+                        self.head = -1
+                        zk_id = self.stack[self.head]
+                        main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                            main_window_width,
+                                                                            ratio)
                 case Keybindings.SHARP:
                     pass
                 case _:
@@ -342,11 +347,9 @@ class Pager:
             links_window.refresh()
             self.w.refresh()
 
-    def run(self, zk_ids: list[str]):
+    def run(self, zk_ids: list[str]) -> None:
         try:
-            curses.noecho()
-            curses.cbreak()
-            self.w.keypad(True)
+            self._setup()
 
             self.stack = zk_ids
             return self._main()
