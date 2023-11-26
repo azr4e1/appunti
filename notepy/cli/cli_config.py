@@ -222,8 +222,8 @@ _COMMANDS: MutableMapping[str, Any] = {
             },
         }
     },
-    "command_navigate": {
-        "help": "Navigate the Zettelkasten.",
+    "command_browse": {
+        "help": "Browse the Zettelkasten.",
         "flags": {
             "zk_id": {
                 "help": "ID of the note to show.",

@@ -39,6 +39,8 @@ class Keybindings(IntEnum):
     S_H = ord('H')
     SHARP = ord('#')
     S = ord('s')
+    D = ord('d')
+    S_D = ord('D')
 
 
 class NumberInput:
@@ -339,6 +341,24 @@ class Pager:
                                                                             ratio)
                 case Keybindings.SHARP:
                     pass
+                case Keybindings.D:
+                    if len(self.stack) <= 1:
+                        break
+                    if self.head != -1:
+                        self.stack = self.stack[:self.head] + \
+                            self.stack[self.head+1:]
+                        self.head = self._check_head(self.head+1)
+                    else:
+                        self.stack = self.stack[:self.head]
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+
+                case Keybindings.S_D:
+                    current_zk_id = self.stack[self.head]
+                    self.stack = [current_zk_id]
+                    self.head = -1
                 case _:
                     pass
 

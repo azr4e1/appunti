@@ -276,7 +276,7 @@ class SubcommandsMixin:
             print(e)
 
     @staticmethod
-    def navigate(args: Namespace) -> None:
+    def browse(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
         try:
             zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
@@ -332,7 +332,7 @@ class Cli(SubcommandsMixin):
     command_sync: MutableMapping[str, Any]
     command_commit: MutableMapping[str, Any]
     command_info: MutableMapping[str, Any]
-    command_navigate: MutableMapping[str, Any]
+    command_browse: MutableMapping[str, Any]
     # command_metadata: MutableMapping[str, Any]
     flag_vault: MutableMapping[str, Any]
     flag_author: MutableMapping[str, Any]
