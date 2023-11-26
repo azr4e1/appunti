@@ -234,7 +234,7 @@ class BodyParser(BaseParser):
         context = _OUT_CONTEXT
 
         for line in file_obj:
-            clean_line = line.strip()
+            clean_line = line.rstrip()
             body.append(clean_line)
 
             # first line needs to be a title
