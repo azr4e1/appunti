@@ -41,6 +41,9 @@ class Keybindings(IntEnum):
     S = ord('s')
     D = ord('d')
     S_D = ord('D')
+    ESCAPE = 27
+    ALT_ENTER_1 = 10
+    ALT_ENTER_2 = 13
 
 
 class MainWindow:
@@ -192,6 +195,14 @@ class StatusBar:
 
         self.pad.addstr(0, 0, pad+stack_indicator, curses.color_pair(5))
 
+    def link_input(self, text: str):
+        input = "#: " + text
+        padding_with = self.width - len(input) - 1
+        pad = " " * padding_with if padding_with >= 0 else ""
+        self.pad.addstr(0, 0, input+pad, curses.color_pair(5))
+        self.pad.refresh(0, 0, curses.LINES-1, curses.COLS -
+                         self.width, curses.LINES, curses.COLS)
+
     def update(self, stack_len: int, head: int) -> None:
         self.stack_len = stack_len
         self.head = head
@@ -304,59 +315,121 @@ class Pager:
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
                 case Keybindings.L | curses.KEY_RIGHT:
                     prev_head = self.head
                     self.head = self._check_head(self.head+1)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
                 case Keybindings.S_H:
                     prev_head = self.head
                     self.head = -1 * len(self.stack)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
                 case Keybindings.S_L:
                     prev_head = self.head
                     self.head = -1
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
                 case curses.KEY_RESIZE:
                     curses.resize_term(*self.w.getmaxyx())
                     self.w.refresh()
                     ratio = curses.COLS // 4
                     main_window_width = curses.COLS - ratio - 1
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
-                    statusbar = StatusBar(len(self.stack), len(self.stack)+self.head+1, ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
+                    statusbar = StatusBar(len(self.stack), len(
+                        self.stack)+self.head+1, ratio)
                 case c if c in link_nr:
                     link = links_window.links[int(chr(c))-1]
                     tmp_res = self.get_id_from_link(link)
                     if tmp_res is None:
                         continue
                     zk_id = tmp_res
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
 
                     self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
                     self.stack.append(zk_id)
                     self.head = -1
+                case Keybindings.SHARP:
+                    link_identifier = ""
+                    statusbar.link_input(link_identifier)
+                    while (d := self.w.getch()) != Keybindings.ESCAPE:
+                        if d == curses.KEY_ENTER \
+                                or d == Keybindings.ALT_ENTER_1 \
+                                or d == Keybindings.ALT_ENTER_2:
+                            if link_identifier == '' \
+                                    or (link_index := int(link_identifier) - 1) >= len(links_window.links):
+                                break
+
+                            link = links_window.links[link_index]
+                            tmp_res = self.get_id_from_link(link)
+                            if tmp_res is None:
+                                break
+                            zk_id = tmp_res
+                            (main_window,
+                             links_window,
+                             link_nr) = self.next_note(zk_id,
+                                                       main_window_width,
+                                                       ratio)
+
+                            self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
+                            self.stack.append(zk_id)
+                            self.head = -1
+                            break
+                        elif d == curses.KEY_BACKSPACE:
+                            link_identifier = link_identifier[:-1]
+                        elif d == curses.KEY_RESIZE:
+                            curses.resize_term(*self.w.getmaxyx())
+                            self.w.refresh()
+                            ratio = curses.COLS // 4
+                            main_window_width = curses.COLS - ratio - 1
+                            zk_id = self.stack[self.head]
+                            (main_window,
+                             links_window,
+                             link_nr) = self.next_note(zk_id,
+                                                       main_window_width,
+                                                       ratio)
+                            statusbar = StatusBar(len(self.stack), len(
+                                self.stack)+self.head+1, ratio)
+                            main_window.refresh()
+                            links_window.refresh()
+                        else:
+                            if not chr(d).isnumeric():
+                                continue
+                            link_identifier += chr(d)
+
+                        statusbar.link_input(link_identifier)
                 case Keybindings.S:
                     curses.endwin()
                     loop = Interactive(self.zk)
@@ -366,11 +439,11 @@ class Pager:
                         self.stack.extend(zk_ids)
                         self.head = -1
                         zk_id = self.stack[self.head]
-                        main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                            main_window_width,
-                                                                            ratio)
-                case Keybindings.SHARP:
-                    pass
+                        (main_window,
+                         links_window,
+                         link_nr) = self.next_note(zk_id,
+                                                   main_window_width,
+                                                   ratio)
                 case Keybindings.D:
                     if len(self.stack) <= 1:
                         break
@@ -381,9 +454,11 @@ class Pager:
                     else:
                         self.stack = self.stack[:self.head]
                     zk_id = self.stack[self.head]
-                    main_window, links_window, link_nr = self.next_note(zk_id,
-                                                                        main_window_width,
-                                                                        ratio)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
 
                 case Keybindings.S_D:
                     current_zk_id = self.stack[self.head]
