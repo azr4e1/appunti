@@ -43,10 +43,6 @@ class Keybindings(IntEnum):
     S_D = ord('D')
 
 
-class NumberInput:
-    pass
-
-
 class MainWindow:
     def __init__(self, width: int, content: str):
         self.width = width
@@ -176,7 +172,35 @@ class LinksWindow:
 
     def refresh(self) -> None:
         self.pad.refresh(self.pos, 0, 0, curses.COLS -
-                         self.width, curses.LINES-1, curses.COLS)
+                         self.width, curses.LINES-2, curses.COLS)
+
+
+class StatusBar:
+    def __init__(self, stack_len: int, head: int, width: int) -> None:
+        self.stack_len = stack_len
+        self.head = head
+        self.width = width
+        # self.win = curses.newwin(
+        #     10, self.width, curses.COLS - self.width, curses.LINES-10)
+        self.pad = curses.newpad(1, self.width)
+        self.refresh()
+
+    def _draw_content(self) -> None:
+        stack_indicator = f"[{self.head}/{self.stack_len}]"
+        padding_width = self.width - len(stack_indicator) - 1
+        pad = " "*padding_width if padding_width >= 0 else ""
+
+        self.pad.addstr(0, 0, pad+stack_indicator, curses.color_pair(5))
+
+    def update(self, stack_len: int, head: int) -> None:
+        self.stack_len = stack_len
+        self.head = head
+        self.refresh()
+
+    def refresh(self) -> None:
+        self._draw_content()
+        self.pad.refresh(0, 0, curses.LINES-1, curses.COLS -
+                         self.width, curses.LINES, curses.COLS)
 
 
 class Pager:
@@ -222,11 +246,12 @@ class Pager:
         note = self._read_note(zk_id)
         main_window = MainWindow(main_window_width, note.materialize())
         links_window = LinksWindow(ratio, list(note.links))
-        link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 9))]
+        link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 10))]
 
         return main_window, links_window, link_nr
 
     def _setup(self) -> None:
+        curses.start_color()
         # frontmatter
         curses.init_pair(1, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
         # headers
@@ -235,6 +260,8 @@ class Pager:
         curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         # links
         curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        # statusbar
+        curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
 
         curses.curs_set(False)
         curses.noecho()
@@ -248,11 +275,11 @@ class Pager:
         main_window_width = curses.COLS - ratio - 1
         if len(self.stack) == 0:
             raise ValueError
-        note = self._read_note(self.stack[self.head])
         zk_id: str = self.stack[self.head]
         main_window, links_window, link_nr = self.next_note(zk_id,
                                                             main_window_width,
                                                             ratio)
+        statusbar = StatusBar(len(self.stack), len(self.stack)+self.head+1, ratio)
         while (c := self.w.getch()) != ord('q'):
             match c:
                 case Keybindings.J | curses.KEY_DOWN:
@@ -312,8 +339,11 @@ class Pager:
                     self.w.refresh()
                     ratio = curses.COLS // 4
                     main_window_width = curses.COLS - ratio - 1
-                    main_window = MainWindow(main_window_width, note.materialize())
-                    links_window = LinksWindow(ratio, list(note.links))
+                    zk_id = self.stack[self.head]
+                    main_window, links_window, link_nr = self.next_note(zk_id,
+                                                                        main_window_width,
+                                                                        ratio)
+                    statusbar = StatusBar(len(self.stack), len(self.stack)+self.head+1, ratio)
                 case c if c in link_nr:
                     link = links_window.links[int(chr(c))-1]
                     tmp_res = self.get_id_from_link(link)
@@ -362,10 +392,9 @@ class Pager:
                 case _:
                     pass
 
-            # screen.clear()
             main_window.refresh()
             links_window.refresh()
-            self.w.refresh()
+            statusbar.update(len(self.stack), len(self.stack)+self.head+1)
 
     def run(self, zk_ids: list[str]) -> None:
         try:
