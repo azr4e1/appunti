@@ -12,6 +12,7 @@ from notepy.cli.interactive_selection import Interactive
 
 
 LINKS_RATIO = 4
+ESCAPE_DELAY = 50
 
 
 class Context(Enum):
@@ -278,6 +279,7 @@ class Pager:
         curses.noecho()
         curses.cbreak()
         self.w.keypad(True)
+        curses.set_escdelay(ESCAPE_DELAY)
 
         self.w.refresh()
 
