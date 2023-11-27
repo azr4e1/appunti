@@ -45,6 +45,8 @@ class Keybindings(IntEnum):
     ESCAPE = 27
     ALT_ENTER_1 = 10
     ALT_ENTER_2 = 13
+    E = ord('e')
+    R = ord('r')
 
 
 class MainWindow:
@@ -355,6 +357,18 @@ class Pager:
                      link_nr) = self.next_note(zk_id,
                                                main_window_width,
                                                ratio)
+                case Keybindings.R:
+                    zk_id = self.stack[self.head]
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
+                case Keybindings.E:
+                    # curses.endwin()
+                    # zk_id = self.stack[self.head]
+                    # self.zk
+                    pass
                 case curses.KEY_RESIZE:
                     curses.resize_term(*self.w.getmaxyx())
                     self.w.refresh()
