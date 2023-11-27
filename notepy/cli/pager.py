@@ -365,10 +365,13 @@ class Pager:
                                                main_window_width,
                                                ratio)
                 case Keybindings.E:
-                    # curses.endwin()
-                    # zk_id = self.stack[self.head]
-                    # self.zk
-                    pass
+                    zk_id = self.stack[self.head]
+                    self.zk.update(zk_id, confirmation=False)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
                 case curses.KEY_RESIZE:
                     curses.resize_term(*self.w.getmaxyx())
                     self.w.refresh()
