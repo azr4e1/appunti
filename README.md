@@ -20,8 +20,11 @@ CLI note manager for Zettelkasten-like note-taking.
 - [x] SQLite caching of indexed notes
 - [x] Support for reindexing
   - [ ] support strict mode for reindexing. Perform thorough check of notes validity.
-- [ ] pager to navigate between notes by following links
+- [x] pager to navigate between notes by following links
+  - [ ] Better note highlighting
+  - [ ] refactor of pager
 - [x] interactive search
+  - [ ] refactor of interactive selector
 - [ ] Find broken links
 - [ ] Knowledge graph creation
 - [ ] REPL
