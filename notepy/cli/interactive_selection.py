@@ -21,6 +21,7 @@ class OddKeys(IntEnum):
     TAB = 9
     MULTI_SELECTION = 42
     CTRL_A = 1
+    ALT_BACKSPACE = 127
 
 
 # TODO: add window to the right containing metadata information if there is enough space
@@ -90,7 +91,7 @@ class Interactive:
             case curses.KEY_RESIZE:
                 curses.resize_term(*self.w.getmaxyx())
                 redraw = True
-            case curses.KEY_BACKSPACE:
+            case curses.KEY_BACKSPACE | OddKeys.ALT_BACKSPACE:
                 cursor_pos = self.check_cursor_pos(text, self.cursor_pos-1)
                 new_text = text[:cursor_pos] + text[cursor_pos+1:] if self.cursor_pos > 0 else text
                 self.cursor_pos = cursor_pos
