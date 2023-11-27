@@ -25,6 +25,7 @@ CLI note manager for Zettelkasten-like note-taking.
   - [ ] refactor of pager
 - [x] interactive search
   - [ ] refactor of interactive selector
+- [ ] support filename reference and full title reference for links
 - [ ] Find broken links
 - [ ] Knowledge graph creation
 - [ ] REPL
