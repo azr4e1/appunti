@@ -3,7 +3,7 @@ from pathlib import Path
 import textwrap
 from enum import Enum, IntEnum, auto
 
-from typing import Optional
+from typing import Optional, cast
 
 from notepy.zettelkasten.zettelkasten import Zettelkasten, ZettelkastenException
 from notepy.zettelkasten.notes import Note
@@ -47,6 +47,8 @@ class Keybindings(IntEnum):
     ALT_ENTER_2 = 13
     E = ord('e')
     R = ord('r')
+    N = ord('n')
+    S_N = ord('N')
 
 
 class MainWindow:
@@ -367,6 +369,49 @@ class Pager:
                 case Keybindings.E:
                     zk_id = self.stack[self.head]
                     self.zk.update(zk_id, confirmation=False)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
+                case Keybindings.N:
+                    zk_id = self.stack[self.head]
+                    curses.endwin()
+                    try:
+                        title = input("Title: ")
+                    except KeyboardInterrupt:
+                        self.w.refresh()
+                        continue
+                    if title == '':
+                        self.w.refresh()
+                        continue
+                    note = cast(Note, self.zk.next(title, [zk_id]))
+                    zk_id = note.zk_id
+                    if self.head == -1:
+                        self.stack.append(zk_id)
+                    else:
+                        self.stack.insert(self.head+1, zk_id)
+                    (main_window,
+                     links_window,
+                     link_nr) = self.next_note(zk_id,
+                                               main_window_width,
+                                               ratio)
+                case Keybindings.S_N:
+                    curses.endwin()
+                    try:
+                        title = input("Title: ")
+                    except KeyboardInterrupt:
+                        self.w.refresh()
+                        continue
+                    if title == '':
+                        self.w.refresh()
+                        continue
+                    note = cast(Note, self.zk.new(title, self.zk.author))
+                    zk_id = note.zk_id
+                    if self.head == -1:
+                        self.stack.append(zk_id)
+                    else:
+                        self.stack.insert(self.head+1, zk_id)
                     (main_window,
                      links_window,
                      link_nr) = self.next_note(zk_id,

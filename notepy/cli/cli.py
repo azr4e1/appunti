@@ -83,10 +83,10 @@ class SubcommandsMixin:
     def new(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
-            my_zk.new(args.title[0],
-                      author=args.author[0],
-                      confirmation=args.no_confirmation,
-                      strict=args.strict)
+            _ = my_zk.new(args.title[0],
+                          author=args.author[0],
+                          confirmation=args.no_confirmation,
+                          strict=args.strict)
         except zk.TitleClashError as e:
             print(e)
         except zk.ZettelkastenException as e:
@@ -204,10 +204,10 @@ class SubcommandsMixin:
             zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
             if zk_ids is None or not zk_ids:
                 return
-            my_zk.next(args.title[0],
-                       zk_ids,
-                       args.no_confirmation,
-                       args.strict)
+            _ = my_zk.next(args.title[0],
+                           zk_ids,
+                           args.no_confirmation,
+                           args.strict)
         except zk.ZettelkastenException as e:
             print(e)
         except WrapperException as e:

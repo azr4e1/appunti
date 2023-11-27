@@ -254,7 +254,7 @@ class Zettelkasten(GitMixin):
             title: str,
             author: Optional[str] = None,
             confirmation: bool = False,
-            strict: bool = False) -> None:
+            strict: bool = False) -> Optional[Note]:
         """
         Create a new note and add it to the vault.
 
@@ -296,6 +296,8 @@ class Zettelkasten(GitMixin):
         self.commit_and_sync(msg=f'Commit "{new_note.zk_id}"',
                              commit=self.autocommit,
                              push=self.autosync)
+
+        return new_note
 
     def update(self, zk_id: str, confirmation: bool = False, strict: bool = False) -> None:
         """
@@ -588,7 +590,7 @@ class Zettelkasten(GitMixin):
     def next(self, title: str,
              zk_ids: list[str],
              confirmation: bool = False,
-             strict: bool = False) -> None:
+             strict: bool = False) -> Optional[Note]:
         """
         Create a new note that is the logical continuation
         of the last note or of the ID provided.
@@ -676,6 +678,8 @@ class Zettelkasten(GitMixin):
                                  f'from {note.zk_id}',
                              commit=self.autocommit,
                              push=self.autosync)
+
+        return new_note
 
     def get_metadata(self, zk_id: str) -> MutableMapping[str, Any]:
         # check if vault is a zettelkasten
