@@ -23,6 +23,8 @@ CLI note manager for Zettelkasten-like note-taking.
 - [x] pager to navigate between notes by following links
   - [ ] Better note highlighting
   - [ ] refactor of pager
+  - [ ] Keybinding `e`: edit current note
+  - [ ] Keybinding `r`: reload current note
 - [x] interactive search
   - [ ] refactor of interactive selector
 - [ ] support filename reference and full title reference for links
