@@ -285,6 +285,7 @@ class Pager:
         self.w.keypad(True)
         curses.set_escdelay(ESCAPE_DELAY)
 
+        self.w.clear()
         self.w.refresh()
 
     def _main(self) -> None:
@@ -374,6 +375,7 @@ class Pager:
                      link_nr) = self.next_note(zk_id,
                                                main_window_width,
                                                ratio)
+                    self._setup()
                 case Keybindings.N:
                     zk_id = self.stack[self.head]
                     curses.endwin()
@@ -396,6 +398,7 @@ class Pager:
                      link_nr) = self.next_note(zk_id,
                                                main_window_width,
                                                ratio)
+                    self._setup()
                 case Keybindings.S_N:
                     curses.endwin()
                     try:
@@ -417,6 +420,7 @@ class Pager:
                      link_nr) = self.next_note(zk_id,
                                                main_window_width,
                                                ratio)
+                    self._setup()
                 case curses.KEY_RESIZE:
                     curses.resize_term(*self.w.getmaxyx())
                     self.w.refresh()
