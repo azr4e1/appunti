@@ -238,7 +238,8 @@ class Interactive:
         text = ""
         # show all the notes at start
         result_list = self.zk.list_notes(title=[f"%{text}%"],
-                                         sort_by='creation_date')
+                                         sort_by='creation_date',
+                                         descending=False)
         # inital position of the cursor
         pos = 0
         self.print_results(result_list, pos)
@@ -265,7 +266,8 @@ class Interactive:
                     result_list = self.zk.list_notes(title=parsed_text,
                                                      tags=tags,
                                                      links=links,
-                                                     sort_by='creation_date')
+                                                     sort_by='creation_date',
+                                                     descending=False)
 
                 self.print_results(result_list, pos)
 
