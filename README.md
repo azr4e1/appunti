@@ -28,38 +28,38 @@ You can see all the flags and commands available by typing
 notepy --help
 ```
 
-  usage: notepy [-h] [--vault VAULT] [--author AUTHOR] [--autocommit]
-                [--autosync] [--editor EDITOR] [--version]
-                {initialize,new,edit,open,delete,print,list,reindex,next,sync,commit,info,browse}
+    usage: notepy [-h] [--vault VAULT] [--author AUTHOR] [--autocommit]
+                  [--autosync] [--editor EDITOR] [--version]
+                  {initialize,new,edit,open,delete,print,list,reindex,next,sync,commit,info,browse}
                 ...
 
-  Zettelkasten manager
+    Zettelkasten manager
 
-  positional arguments:
-    {initialize,new,edit,open,delete,print,list,reindex,next,sync,commit,info,browse}
-      initialize          Initialize the vault.
-      new                 Create a new note.
-      edit                Open an existing note by ID to edit.
-      open                Open the selected notes without affecting index and
+    positional arguments:
+      {initialize,new,edit,open,delete,print,list,reindex,next,sync,commit,info,browse}
+        initialize          Initialize the vault.
+        new                 Create a new note.
+        edit                Open an existing note by ID to edit.
+        open                Open the selected notes without affecting index and
                           .last
-      delete              Delete a note by ID.
-      print               Print the note by ID.
-      list                List all the notes.
-      reindex             Reindex the vault.
-      next                Create new note continuing from last one.
-      sync                Commit and sync with remote repository if available.
-      commit              Commit current changes to repo.
-      info                Show metadata for a note.
-      browse              Browse the Zettelkasten.
+        delete              Delete a note by ID.
+        print               Print the note by ID.
+        list                List all the notes.
+        reindex             Reindex the vault.
+        next                Create new note continuing from last one.
+        sync                Commit and sync with remote repository if available.
+        commit              Commit current changes to repo.
+        info                Show metadata for a note.
+        browse              Browse the Zettelkasten.
 
-  options:
-    -h, --help            show this help message and exit
-    --vault VAULT         Location of the vault.
-    --author AUTHOR       Author name.
-    --autocommit          Whether to commit the git repo at every action.
-    --autosync            Whether to push to remote origin at every action.
-    --editor EDITOR       Editor to use.
-    --version             show program's version number and exit
+    options:
+      -h, --help            show this help message and exit
+      --vault VAULT         Location of the vault.
+      --author AUTHOR       Author name.
+      --autocommit          Whether to commit the git repo at every action.
+      --autosync            Whether to push to remote origin at every action.
+      --editor EDITOR       Editor to use.
+      --version             show program's version number and exit
 
 
 To drill down and see the flags and use of a single command, you can call for help directly on that command:
