@@ -68,13 +68,13 @@ To drill down and see the flags and use of a single command, you can call for he
 notepy browse --help
 ```
 
-  usage: notepy browse [-h] [zk_id ...]
+    usage: notepy browse [-h] [zk_id ...]
 
-  positional arguments:
-    zk_id       ID of the note to show.
+    positional arguments:
+      zk_id       ID of the note to show.
 
-  options:
-    -h, --help  show this help message and exit
+    options:
+      -h, --help  show this help message and exit
 
 
 Each note is attributed with a hash which represents it uniquely. This means that notes don't need to have unique titles (but that helps).
