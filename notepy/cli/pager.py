@@ -49,6 +49,7 @@ class Keybindings(IntEnum):
     R = ord('r')
     N = ord('n')
     S_N = ord('N')
+    ALT_BACKSPACE = 127
 
 
 class MainWindow:
@@ -476,7 +477,7 @@ class Pager:
                             self.stack.append(zk_id)
                             self.head = -1
                             break
-                        elif d == curses.KEY_BACKSPACE:
+                        elif d == curses.KEY_BACKSPACE or d == Keybindings.ALT_BACKSPACE:
                             link_identifier = link_identifier[:-1]
                         elif d == curses.KEY_RESIZE:
                             curses.resize_term(*self.w.getmaxyx())

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "notepy"
-version = "1.2.4"
+version = "1.2.5"
 description = "CLI program to manage your notes."
 authors = ["Lorenzo Drumond <drumondlorenzo@posteo.net>"]
 readme = "README.md"
