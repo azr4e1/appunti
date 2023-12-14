@@ -217,7 +217,8 @@ class Zettelkasten(GitMixin):
 
         # Make sure title doesn't clash with other notes
         if new_note.title != note.title:
-            self._check_unique_title(new_note.title, strict=strict)
+            self._check_unique_title(
+                new_note.title, strict=strict, blocking=False)
 
         # ask for confirmation
         if confirmation and not ask_for_confirmation("Save note?"):
@@ -228,14 +229,19 @@ class Zettelkasten(GitMixin):
 
         return new_note
 
-    def _check_unique_title(self, note_title: str, strict: bool = False) -> None:
+    def _check_unique_title(self, note_title: str,
+                            strict: bool = False, blocking=False) -> None:
         all_titles = [title[0] for title in self.dbmanager.get_title()]
         if note_title in all_titles:
             if strict:
                 raise TitleClashError("Title is already used in another note.")
             else:
-                print("Title is already in use in another note. Please consider changing it "
-                      "to something different, as it may cause ambiguous links in your vault.")
+                print("Title is already in use in another note. Please "
+                      "consider changing it to something different, as it may "
+                      "cause ambiguous links in your vault.")
+                if blocking:
+                    print("\nPress any key to continue ", end="")
+                    input()
 
     def _generate_hash_collision_free_note(self, note: Note) -> Note:
         """
@@ -265,7 +271,7 @@ class Zettelkasten(GitMixin):
         # check if vault is a zettelkasten
         self._check_zettelkasten()
         # check if title is unique
-        self._check_unique_title(title, strict=strict)
+        self._check_unique_title(title, strict=strict, blocking=True)
 
         # if different author is provided, that takes precedence
         if author is None:
@@ -601,7 +607,7 @@ class Zettelkasten(GitMixin):
         # check if vault is a zettelkasten
         self._check_zettelkasten()
         # check title is unique
-        self._check_unique_title(title)
+        self._check_unique_title(title, blocking=True)
 
         # check that the note exists
         for zk_id in zk_ids:
