@@ -200,8 +200,9 @@ class StatusBar:
 
         self.pad.addstr(0, 0, pad+stack_indicator, curses.color_pair(5))
 
-    def link_input(self, text: str):
-        input = "#: " + text
+    def link_input(self, text: str) -> None:
+        prefix = "#: "
+        input = prefix + text[:self.width-len(prefix)-1]
         padding_with = self.width - len(input) - 1
         pad = " " * padding_with if padding_with >= 0 else ""
         self.pad.addstr(0, 0, input+pad, curses.color_pair(5))
