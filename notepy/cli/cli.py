@@ -218,11 +218,11 @@ class SubcommandsMixin:
             print(e)
 
     @staticmethod
-    @spinner("Syncing with remote and reindexing...", "Syncing terminated successfully.")
+    @spinner("Syncing with remote...",
+             "Syncing terminated successfully. You may need to reindex the vault.")
     def sync(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
         my_zk.sync()
-        my_zk.multiprocess_index_vault()
 
     @staticmethod
     @spinner("Committing current changes...", "Commit terminated successfully.")
