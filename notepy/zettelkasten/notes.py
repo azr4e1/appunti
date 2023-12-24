@@ -9,27 +9,13 @@ from typing import Any
 from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import dataclass, fields
-from string import punctuation, ascii_letters
+from string import ascii_letters
 from pathlib import Path
 from hashlib import md5
 import random
 
 from notepy.parser.parser import HeaderParser, BodyParser
-
-
-def sluggify(title: str) -> str:
-    """
-    Sluggify the title.
-
-    :param title: title to sluggify.
-    :return: sluggified title (duh).
-    """
-    clean_title = "".join(list(map(lambda x: x
-                                   if x not in punctuation or x == "-"
-                                   else "", title)))
-    slug = clean_title.lower().replace(" ", "-")
-
-    return slug
+from notepy.utils import sluggify
 
 
 class BaseNote(ABC):

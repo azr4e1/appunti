@@ -7,7 +7,7 @@ from typing import Optional, cast
 
 from notepy.zettelkasten.zettelkasten import Zettelkasten, ZettelkastenException
 from notepy.zettelkasten.notes import Note
-from notepy.zettelkasten.notes import sluggify
+from notepy.utils import sluggify
 from notepy.cli.interactive_selection import Interactive
 
 
@@ -273,7 +273,7 @@ class Pager:
         self.w.refresh()
         note = self._read_note(zk_id)
         main_window = MainWindow(main_window_width, note.materialize())
-        links_window = LinksWindow(ratio, note.links, note.next)
+        links_window = LinksWindow(ratio, set(note.links), set(note.next))
         link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 10))]
 
         return main_window, links_window, link_nr

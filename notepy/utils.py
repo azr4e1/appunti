@@ -1,3 +1,4 @@
+from string import punctuation
 import sys
 from threading import Thread
 import time
@@ -98,3 +99,20 @@ def ask_for_confirmation(msg: str = "Save note?") -> bool:
         commit = False
 
     return commit
+
+
+def sluggify(title: str) -> str:
+    """
+    Sluggify the title.
+
+    :param title: title to sluggify.
+    :return: sluggified title (duh).
+    """
+    clean_title = "".join(list(map(lambda x: x
+                                   if x not in punctuation or x == "-"
+                                   else "", title)))
+    slug = clean_title.lower().replace(" ", "-")
+
+    return slug
+
+

@@ -230,7 +230,8 @@ class Zettelkasten(GitMixin):
         return new_note
 
     def _check_unique_title(self, note_title: str,
-                            strict: bool = False, blocking=False) -> None:
+                            strict: bool = False,
+                            blocking: bool=False) -> None:
         all_titles = [title[0] for title in self.dbmanager.get_title()]
         if note_title in all_titles:
             if strict:

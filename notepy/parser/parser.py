@@ -1,14 +1,18 @@
 """
 Parsers for various elements of a note
 """
+from abc import ABC, abstractmethod
+
+from datetime import datetime
+from io import TextIOWrapper
+from pathlib import Path
+import re
+from string import punctuation
+
 from typing import Any, TypeVar, Optional, TypeAlias
 from collections.abc import Collection, Sequence, MutableMapping
-from abc import ABC, abstractmethod
-from pathlib import Path
-from io import TextIOWrapper
-from datetime import datetime
-from string import punctuation
-import re
+
+from notepy.utils import sluggify
 
 Target = TypeVar("Target", str, Path)
 Parsed: TypeAlias = MutableMapping[str, Any]
@@ -278,7 +282,7 @@ class BodyParser(BaseParser):
         line_links = [link.removeprefix(start_link).removesuffix(end_link)
                       for link in pattern.findall(line)]
         # remove empty link
-        line_links_set = set(link for link in line_links if link != "")
+        line_links_set = set(sluggify(link) for link in line_links if link != "")
 
         return line_links_set
 

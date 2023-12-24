@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from notepy.notes import Note
+from notepy.zettelkasten.notes import Note
 
 
 class TestNote(unittest.TestCase):
