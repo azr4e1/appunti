@@ -95,6 +95,7 @@ class Note(BaseNote):
     :param zk_id: unique id of the note, in the form %Y%m%d%H%M%S
     :param tags: tags of the note
     :param links: links the note points to
+    :param next: links to the note directly next to this one
     :param body: the whole body of the note
     """
     title: str
@@ -104,6 +105,7 @@ class Note(BaseNote):
     zk_id: str
     tags: Collection[str]
     links: Collection[str]
+    next: Collection[str]
     body: str
 
     @classmethod
@@ -119,6 +121,7 @@ class Note(BaseNote):
         body = f"# {title}\n\n# References"
         zk = cls(**metadata,
                  links=[],
+                 next=[],
                  body=body)
 
         return zk
@@ -166,8 +169,10 @@ class Note(BaseNote):
                     print(f"First header and title of note {frontmatter_meta['zk_id']} do not coincide.")
 
         links = body_meta['links']
+        next = body_meta['next']
         body = "\n".join(body_meta['body']).strip()
         new_note = Note(links=links,
+                        next=next,
                         body=body,
                         **frontmatter_meta)
 
@@ -204,7 +209,7 @@ class Note(BaseNote):
 
         frontmatter_names = [note_field.name
                              for note_field in fields(Note)
-                             if note_field.name not in ['links', 'body']]
+                             if note_field.name not in ['links', 'next', 'body']]
         frontmatter_metadata = {name: getattr(self, name) for name in frontmatter_names}
         frontmatter_metadata['tags'] = " ".join('#' + tag for tag in frontmatter_metadata['tags'])
         frontmatter_metadata['date'] = (frontmatter_metadata['date']

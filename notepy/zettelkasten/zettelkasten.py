@@ -663,8 +663,7 @@ class Zettelkasten(GitMixin):
         for note in notes:
             filename = Path(note.zk_id).with_suffix(".md")
             note_path = self.vault / filename
-            note.body += "\n"
-            note.body += "- " + f"[[{new_note.sluggify()}]]"
+            note.body += "\n\nNext -> " + f"[[{new_note.sluggify()}]]"
             note.links = list(note.links)
             note.links.append(new_note.sluggify())
             note.links = set(note.links)
@@ -681,7 +680,7 @@ class Zettelkasten(GitMixin):
 
         # add and commit
         self.commit_and_sync(msg=f'Commit "{new_note.zk_id}" continuing '
-                                 f'from {note.zk_id}',
+                                 f'from "{note.zk_id}"',
                              commit=self.autocommit,
                              push=self.autosync)
 

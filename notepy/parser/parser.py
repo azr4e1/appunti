@@ -18,6 +18,7 @@ _IN_CONTEXT = True
 _OUT_CONTEXT = False
 _DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 _INVALID_CHARS = punctuation.replace("_", "").replace("#", "")
+_NEXT_NOTE_FMT = "Next -> "
 
 
 def _open_or_return_handle(*,
@@ -230,6 +231,7 @@ class BodyParser(BaseParser):
         file_obj = _open_or_return_handle(path=path, handle=handle)
         headers: list[str] = []
         links: list[str] = []
+        next: list[str] = []
         body: list[str] = []
         context = _OUT_CONTEXT
 
@@ -250,9 +252,15 @@ class BodyParser(BaseParser):
 
             # parse for links
             line_links = self._link_parser(clean_line)
+            # check if it specifies a next note
+            if self._next_parser(clean_line):
+                next.extend(line_links)
             links.extend(line_links)
 
-        return {'header': headers, 'links': set(links), 'body': body}, file_obj
+        return {'header': headers,
+                'links': set(links),
+                'next': set(next),
+                'body': body}, file_obj
 
     def _link_parser(self, line: str) -> Collection[str]:
         """
@@ -273,6 +281,23 @@ class BodyParser(BaseParser):
         line_links_set = set(link for link in line_links if link != "")
 
         return line_links_set
+
+    # TODO: make next node format not hard coded
+    def _next_parser(self, line: str) -> bool:
+        """
+        Parse a line to check if it specifies the next note.
+        Returns True if it does.
+
+        :param line: line to parse
+        :return: True if specifies next link, False otherwise
+        """
+
+        start_link = self.link_del[0]
+        end_link = self.link_del[1]
+        pattern = re.compile(
+            f"^{_NEXT_NOTE_FMT}{re.escape(start_link)}.*?{re.escape(end_link)}$")
+
+        return bool(pattern.match(line))
 
 
 class FrontmatterException(Exception):

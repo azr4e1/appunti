@@ -139,9 +139,11 @@ class MainWindow:
 
 class LinksWindow:
 
-    def __init__(self, width: int, links: list[str]) -> None:
+    def __init__(self, width: int, links: set[str], next: set[str]) -> None:
         self.width = width
-        self.links = links
+        self.next = list(next)
+        self.other_links = list(links - next)
+        self.links = self.next + self.other_links
         self.pos = 0
 
         self.wrapped_links = self._wrap_links()
@@ -152,8 +154,16 @@ class LinksWindow:
 
     def _wrap_links(self) -> list[str]:
         lines = []
-        for index, line in enumerate(self.links):
-            line_nr = f"[{index+1}] {line}"
+        # first the notes that come next
+        for index, line in enumerate(self.next):
+            line_nr = f"[{index+1}] -> {line}"
+            for wrapped_line in textwrap.wrap(line_nr, self.width):
+                lines.append(wrapped_line)
+        # keep track of where we left off
+        final_index = len(self.next)
+
+        for index, line in enumerate(self.other_links):
+            line_nr = f"[{index+final_index+1}] {line}"
             for wrapped_line in textwrap.wrap(line_nr, self.width):
                 lines.append(wrapped_line)
 
@@ -263,7 +273,7 @@ class Pager:
         self.w.refresh()
         note = self._read_note(zk_id)
         main_window = MainWindow(main_window_width, note.materialize())
-        links_window = LinksWindow(ratio, list(note.links))
+        links_window = LinksWindow(ratio, note.links, note.next)
         link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 10))]
 
         return main_window, links_window, link_nr
