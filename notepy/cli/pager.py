@@ -13,6 +13,7 @@ from notepy.cli.interactive_selection import Interactive
 
 LINKS_RATIO = 4
 ESCAPE_DELAY = 50
+_NEXT_NOTE_SYM = "-> "
 
 
 class Context(Enum):
@@ -156,7 +157,7 @@ class LinksWindow:
         lines = []
         # first the notes that come next
         for index, line in enumerate(self.next):
-            line_nr = f"[{index+1}] -> {line}"
+            line_nr = f"[{index+1}] {_NEXT_NOTE_SYM}{line}"
             for wrapped_line in textwrap.wrap(line_nr, self.width):
                 lines.append(wrapped_line)
         # keep track of where we left off

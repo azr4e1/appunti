@@ -8,7 +8,6 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from glob import glob1
 from multiprocessing import Pool
-from copy import copy
 from datetime import datetime
 
 from notepy.zettelkasten.notes import Note

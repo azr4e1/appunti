@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 
 from collections.abc import MutableMapping
-from typing import Optional, cast
+from typing import Optional
 
 from notepy.zettelkasten.zettelkasten import Zettelkasten
 
@@ -25,8 +25,6 @@ class OddKeys(IntEnum):
 
 
 # TODO: add window to the right containing metadata information if there is enough space
-# TODO: implement tag and link filtering
-# TODO: implement multiselection
 # TODO: comment!
 class Interactive:
     def __init__(self, zk: Zettelkasten):
