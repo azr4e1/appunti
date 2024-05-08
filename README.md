@@ -19,16 +19,16 @@ You'll need an editor of your choice to edit the notes. You can set this by modi
 
 Future versions will support a configuration TOML file.
 
-This is also a library that you can import with `import notepy`. The main packages are `notepy.zettelkasten.notes` and `notepy.zettelkasten.zettelkasten`
+This is also a library that you can import with `import appunti`. The main packages are `appunti.zettelkasten.notes` and `appunti.zettelkasten.zettelkasten`
 
 # Commands
 You can see all the flags and commands available by typing
 
 ```bash
-notepy --help
+appunti --help
 ```
 
-    usage: notepy [-h] [--vault VAULT] [--author AUTHOR] [--autocommit]
+    usage: appunti [-h] [--vault VAULT] [--author AUTHOR] [--autocommit]
                   [--autosync] [--editor EDITOR] [--version]
                   {initialize,new,edit,open,delete,print,list,reindex,next,sync,commit,info,browse}
                 ...
@@ -65,10 +65,10 @@ notepy --help
 To drill down and see the flags and use of a single command, you can call for help directly on that command:
 
 ```bash
-notepy browse --help
+appunti browse --help
 ```
 
-    usage: notepy browse [-h] [zk_id ...]
+    usage: appunti browse [-h] [zk_id ...]
 
     positional arguments:
       zk_id       ID of the note to show.
@@ -101,7 +101,7 @@ Links are surrounded by double square brackets. They are parsed independently on
 
 Tags are identified by a leading `#` and can only contain `_` as special character.
 
-Notes are indexed in a sqlite database. If you make changes to notes without using `notepy`, you'll have to reindex the database in order to make sure it reflects the most recent changes.
+Notes are indexed in a sqlite database. If you make changes to notes without using `appunti`, you'll have to reindex the database in order to make sure it reflects the most recent changes.
 
 # Interactive selection
 
@@ -117,7 +117,7 @@ Pressing ENTER will select the note under the cursor if multi-selection is activ
 
 # Pager
 
-The pager is activated with the command `notepy browse`. This is an easy way to scroll through your notes and follow links as you read.
+The pager is activated with the command `appunti browse`. This is an easy way to scroll through your notes and follow links as you read.
 
 ## Keybindings
 
