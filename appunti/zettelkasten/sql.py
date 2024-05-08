@@ -7,8 +7,7 @@ from pathlib import Path
 
 from typing import Optional
 
-from notepy.zettelkasten.notes import Note
-
+from appunti.zettelkasten.notes import Note
 
 _CREATE_MAIN_TABLE_STMT = """
     CREATE TABLE IF NOT EXISTS zettelkasten(zk_id STRING NOT NULL,
@@ -97,10 +96,7 @@ class DBManager:
 
         :param note: the updated note.
         """
-        main_payload = (note.title,
-                        note.author,
-                        note.last,
-                        note.zk_id)
+        main_payload = (note.title, note.author, note.last, note.zk_id)
         tags_payload = [(tag, note.zk_id) for tag in note.tags]
         links_payload = [(link, note.zk_id) for link in note.links]
 
@@ -108,8 +104,8 @@ class DBManager:
             with sqlite3.connect(self.index) as conn:
                 conn.execute(_UPDATE_MAIN_STMT, main_payload)
                 # update tags and links
-                conn.execute(_DELETE_TAGS_STMT, (note.zk_id,))
-                conn.execute(_DELETE_LINKS_STMT, (note.zk_id,))
+                conn.execute(_DELETE_TAGS_STMT, (note.zk_id, ))
+                conn.execute(_DELETE_LINKS_STMT, (note.zk_id, ))
                 conn.executemany(_INSERT_TAGS_STMT, tags_payload)
                 conn.executemany(_INSERT_LINKS_STMT, links_payload)
         # TODO: investigate sqlite3 exceptions
@@ -123,10 +119,7 @@ class DBManager:
 
         :param note: note to process.
         """
-        main_payload = (note.zk_id,
-                        note.title,
-                        note.author,
-                        note.date,
+        main_payload = (note.zk_id, note.title, note.author, note.date,
                         note.last)
         tags_payload = [(tag, note.zk_id) for tag in note.tags]
         links_payload = [(link, note.zk_id) for link in note.links]
@@ -147,46 +140,47 @@ class DBManager:
         """
         try:
             with sqlite3.connect(self.index) as conn:
-                conn.execute(_DELETE_MAIN_STMT, (zk_id,))
+                conn.execute(_DELETE_MAIN_STMT, (zk_id, ))
         except sqlite3.IntegrityError as e:
             raise DBManagerException("SQL error") from e
 
     # TODO: needs improvements in performance. Maybe don't build
     # a huge join but build incrementally?
-    def list_notes(self,
-                   title: Optional[list[str]] = None,
-                   zk_id: Optional[list[str]] = None,
-                   author: Optional[list[str]] = None,
-                   tag: Optional[list[str]] = None,
-                   link: Optional[list[str]] = None,
-                   # creation_date: Optional[list[str]] = None,
-                   # access_date: Optional[list[str]] = None,
-                   sort_by: Optional[str] = None,
-                   descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
+    def list_notes(
+            self,
+            title: Optional[list[str]] = None,
+            zk_id: Optional[list[str]] = None,
+            author: Optional[list[str]] = None,
+            tag: Optional[list[str]] = None,
+            link: Optional[list[str]] = None,
+            # creation_date: Optional[list[str]] = None,
+            # access_date: Optional[list[str]] = None,
+            sort_by: Optional[str] = None,
+            descending: bool = True,
+            show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
         """
         """
         query: str = _JOINED_ALL
         payload = []
-        select_cols = "SELECT DISTINCT " + ", ".join(f"{col}" for col in show) + " FROM "
+        select_cols = "SELECT DISTINCT " + ", ".join(
+            f"{col}" for col in show) + " FROM "
 
         queries = []
         for name, table in [('title', 'zettelkasten'),
                             ('zk_id', 'zettelkasten'),
-                            ('author', 'zettelkasten'),
-                            ('tag', 'tags'),
+                            ('author', 'zettelkasten'), ('tag', 'tags'),
                             ('link', 'links')]:
 
             value = locals()[name]
             if value is None:
                 continue
-            tmp_query, tmp_payload = self._assemble_templated_query(table,
-                                                                    name,
-                                                                    value)
+            tmp_query, tmp_payload = self._assemble_templated_query(
+                table, name, value)
             payload += tmp_payload
             queries.append(tmp_query)
 
-        sub_queries = " AND ".join([f"zk_id IN ({tmp_query})" for tmp_query in queries])
+        sub_queries = " AND ".join(
+            [f"zk_id IN ({tmp_query})" for tmp_query in queries])
         where_query = " WHERE " + sub_queries if sub_queries else ""
 
         ascending_query = "DESC" if descending else "ASC"
@@ -202,16 +196,17 @@ class DBManager:
                 results = cur.execute(query, tuple(payload)).fetchall()
                 cur.close()
         except sqlite3.OperationalError as e:
-            raise DBManagerException("Something went wrong. Have you tried indexing your notes first?"
-                                     f"\nError: {e}")
+            raise DBManagerException(
+                "Something went wrong. Have you tried indexing your notes first?"
+                f"\nError: {e}")
 
         return results
         # return query
 
     @staticmethod
-    def _assemble_templated_query(table_name: str,
-                                  column_name: str,
-                                  column_values: list[str]) -> tuple[str, list[str]]:
+    def _assemble_templated_query(
+            table_name: str, column_name: str,
+            column_values: list[str]) -> tuple[str, list[str]]:
         query_template = "SELECT zk_id FROM {} WHERE zk_id IN ({})"
         query = f"SELECT zk_id from {table_name}"
         payload: list[str] = []
@@ -232,7 +227,7 @@ class DBManager:
 
         return results
 
-    def get_zk_id(self,) -> list[str]:
+    def get_zk_id(self, ) -> list[str]:
         """
         """
         with sqlite3.connect(self.index) as conn:

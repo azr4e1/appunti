@@ -5,11 +5,10 @@ from enum import Enum, IntEnum, auto
 
 from typing import Optional, cast
 
-from notepy.zettelkasten.zettelkasten import Zettelkasten, ZettelkastenException
-from notepy.zettelkasten.notes import Note
-from notepy.utils import sluggify
-from notepy.cli.interactive_selection import Interactive
-
+from appunti.zettelkasten.zettelkasten import Zettelkasten, ZettelkastenException
+from appunti.zettelkasten.notes import Note
+from appunti.utils import sluggify
+from appunti.cli.interactive_selection import Interactive
 
 LINKS_RATIO = 4
 ESCAPE_DELAY = 50
@@ -54,6 +53,7 @@ class Keybindings(IntEnum):
 
 
 class MainWindow:
+
     def __init__(self, width: int, content: str):
         self.width = width
         self.content = content
@@ -87,11 +87,11 @@ class MainWindow:
         return pos
 
     def scroll_down(self) -> None:
-        self.pos = self._correct_pos(self.pos+1)
+        self.pos = self._correct_pos(self.pos + 1)
         self.refresh()
 
     def scroll_up(self) -> None:
-        self.pos = self._correct_pos(self.pos-1)
+        self.pos = self._correct_pos(self.pos - 1)
         self.refresh()
 
     def go_to_start(self) -> None:
@@ -99,7 +99,7 @@ class MainWindow:
         self.refresh()
 
     def go_to_end(self) -> None:
-        self.pos = self._correct_pos(self.limit-curses.LINES)
+        self.pos = self._correct_pos(self.limit - curses.LINES)
         self.refresh()
 
     def page_down(self) -> None:
@@ -127,7 +127,8 @@ class MainWindow:
 
             if context is Context.FRONTMATTER_IN and line != "---":
                 self.pad.addstr(index, 0, line, curses.color_pair(1))
-            elif context is Context.CODEBLOCK_IN and not line.startswith("```"):
+            elif context is Context.CODEBLOCK_IN and not line.startswith(
+                    "```"):
                 self.pad.addstr(index, 0, line, curses.color_pair(3))
             elif line.startswith('#'):
                 self.pad.addstr(index, 0, line, curses.color_pair(2))
@@ -135,7 +136,7 @@ class MainWindow:
                 self.pad.addstr(index, 0, line)
 
     def refresh(self) -> None:
-        self.pad.refresh(self.pos, 0, 0, 0, curses.LINES-1, self.width)
+        self.pad.refresh(self.pos, 0, 0, 0, curses.LINES - 1, self.width)
 
 
 class LinksWindow:
@@ -179,11 +180,11 @@ class LinksWindow:
         return pos
 
     def scroll_down(self) -> None:
-        self.pos = self._correct_pos(self.pos+1)
+        self.pos = self._correct_pos(self.pos + 1)
         self.refresh()
 
     def scroll_up(self) -> None:
-        self.pos = self._correct_pos(self.pos-1)
+        self.pos = self._correct_pos(self.pos - 1)
         self.refresh()
 
     def _draw_content(self) -> None:
@@ -191,11 +192,12 @@ class LinksWindow:
             self.pad.addstr(index, 0, line, curses.color_pair(4))
 
     def refresh(self) -> None:
-        self.pad.refresh(self.pos, 0, 0, curses.COLS -
-                         self.width, curses.LINES-2, curses.COLS)
+        self.pad.refresh(self.pos, 0, 0, curses.COLS - self.width,
+                         curses.LINES - 2, curses.COLS)
 
 
 class StatusBar:
+
     def __init__(self, stack_len: int, head: int, width: int) -> None:
         self.stack_len = stack_len
         self.head = head
@@ -208,18 +210,18 @@ class StatusBar:
     def _draw_content(self) -> None:
         stack_indicator = f"[{self.head}/{self.stack_len}]"
         padding_width = self.width - len(stack_indicator) - 1
-        pad = " "*padding_width if padding_width >= 0 else ""
+        pad = " " * padding_width if padding_width >= 0 else ""
 
-        self.pad.addstr(0, 0, pad+stack_indicator, curses.color_pair(5))
+        self.pad.addstr(0, 0, pad + stack_indicator, curses.color_pair(5))
 
     def link_input(self, text: str) -> None:
         prefix = "#: "
-        input = prefix + text[:self.width-len(prefix)-1]
+        input = prefix + text[:self.width - len(prefix) - 1]
         padding_with = self.width - len(input) - 1
         pad = " " * padding_with if padding_with >= 0 else ""
-        self.pad.addstr(0, 0, input+pad, curses.color_pair(5))
-        self.pad.refresh(0, 0, curses.LINES-1, curses.COLS -
-                         self.width, curses.LINES, curses.COLS)
+        self.pad.addstr(0, 0, input + pad, curses.color_pair(5))
+        self.pad.refresh(0, 0, curses.LINES - 1, curses.COLS - self.width,
+                         curses.LINES, curses.COLS)
 
     def update(self, stack_len: int, head: int) -> None:
         self.stack_len = stack_len
@@ -228,11 +230,12 @@ class StatusBar:
 
     def refresh(self) -> None:
         self._draw_content()
-        self.pad.refresh(0, 0, curses.LINES-1, curses.COLS -
-                         self.width, curses.LINES, curses.COLS)
+        self.pad.refresh(0, 0, curses.LINES - 1, curses.COLS - self.width,
+                         curses.LINES, curses.COLS)
 
 
 class Pager:
+
     def __init__(self, zk: Zettelkasten):
         self.w = curses.initscr()
         self.zk = zk
@@ -267,15 +270,16 @@ class Pager:
         except ValueError:
             return None
 
-    def next_note(self, zk_id: str,
-                  main_window_width: int,
+    def next_note(self, zk_id: str, main_window_width: int,
                   ratio: int) -> tuple[MainWindow, LinksWindow, list[int]]:
         self.w.clear()
         self.w.refresh()
         note = self._read_note(zk_id)
         main_window = MainWindow(main_window_width, note.materialize())
         links_window = LinksWindow(ratio, set(note.links), set(note.next))
-        link_nr = [ord(str(i)) for i in range(1, min(len(links_window.links)+1, 10))]
+        link_nr = [
+            ord(str(i)) for i in range(1, min(len(links_window.links) + 1, 10))
+        ]
 
         return main_window, links_window, link_nr
 
@@ -307,10 +311,10 @@ class Pager:
         if len(self.stack) == 0:
             raise ValueError
         zk_id: str = self.stack[self.head]
-        main_window, links_window, link_nr = self.next_note(zk_id,
-                                                            main_window_width,
-                                                            ratio)
-        statusbar = StatusBar(len(self.stack), len(self.stack)+self.head+1, ratio)
+        main_window, links_window, link_nr = self.next_note(
+            zk_id, main_window_width, ratio)
+        statusbar = StatusBar(len(self.stack),
+                              len(self.stack) + self.head + 1, ratio)
         while (c := self.w.getch()) != ord('q'):
             match c:
                 case Keybindings.J | curses.KEY_DOWN:
@@ -331,63 +335,45 @@ class Pager:
                     links_window.scroll_up()
                 case Keybindings.H | curses.KEY_LEFT:
                     prev_head = self.head
-                    self.head = self._check_head(self.head-1)
+                    self.head = self._check_head(self.head - 1)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                 case Keybindings.L | curses.KEY_RIGHT:
                     prev_head = self.head
-                    self.head = self._check_head(self.head+1)
+                    self.head = self._check_head(self.head + 1)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                 case Keybindings.S_H:
                     prev_head = self.head
                     self.head = -1 * len(self.stack)
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                 case Keybindings.S_L:
                     prev_head = self.head
                     self.head = -1
                     if prev_head == self.head:
                         continue
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                 case Keybindings.R:
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                 case Keybindings.E:
                     zk_id = self.stack[self.head]
                     self.zk.update(zk_id, confirmation=False)
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                     self._setup()
                 case Keybindings.N:
                     zk_id = self.stack[self.head]
@@ -405,12 +391,9 @@ class Pager:
                     if self.head == -1:
                         self.stack.append(zk_id)
                     else:
-                        self.stack.insert(self.head+1, zk_id)
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                        self.stack.insert(self.head + 1, zk_id)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                     self._setup()
                 case Keybindings.S_N:
                     curses.endwin()
@@ -427,12 +410,9 @@ class Pager:
                     if self.head == -1:
                         self.stack.append(zk_id)
                     else:
-                        self.stack.insert(self.head+1, zk_id)
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                        self.stack.insert(self.head + 1, zk_id)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
                     self._setup()
                 case curses.KEY_RESIZE:
                     curses.resize_term(*self.w.getmaxyx())
@@ -440,26 +420,22 @@ class Pager:
                     ratio = curses.COLS // 4
                     main_window_width = curses.COLS - ratio - 1
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
-                    statusbar = StatusBar(len(self.stack), len(
-                        self.stack)+self.head+1, ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
+                    statusbar = StatusBar(len(self.stack),
+                                          len(self.stack) + self.head + 1,
+                                          ratio)
                 case c if c in link_nr:
-                    link = links_window.links[int(chr(c))-1]
+                    link = links_window.links[int(chr(c)) - 1]
                     tmp_res = self.get_id_from_link(link)
                     if tmp_res is None:
                         continue
                     zk_id = tmp_res
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
 
-                    self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
+                    self.stack = self.stack[:self.head +
+                                            1] if self.head < -1 else self.stack
                     self.stack.append(zk_id)
                     self.head = -1
                 case Keybindings.SHARP:
@@ -478,13 +454,13 @@ class Pager:
                             if tmp_res is None:
                                 break
                             zk_id = tmp_res
-                            (main_window,
-                             links_window,
+                            (main_window, links_window,
                              link_nr) = self.next_note(zk_id,
                                                        main_window_width,
                                                        ratio)
 
-                            self.stack = self.stack[:self.head+1] if self.head < -1 else self.stack
+                            self.stack = self.stack[:self.head +
+                                                    1] if self.head < -1 else self.stack
                             self.stack.append(zk_id)
                             self.head = -1
                             break
@@ -496,13 +472,13 @@ class Pager:
                             ratio = curses.COLS // 4
                             main_window_width = curses.COLS - ratio - 1
                             zk_id = self.stack[self.head]
-                            (main_window,
-                             links_window,
+                            (main_window, links_window,
                              link_nr) = self.next_note(zk_id,
                                                        main_window_width,
                                                        ratio)
-                            statusbar = StatusBar(len(self.stack), len(
-                                self.stack)+self.head+1, ratio)
+                            statusbar = StatusBar(
+                                len(self.stack),
+                                len(self.stack) + self.head + 1, ratio)
                             main_window.refresh()
                             links_window.refresh()
                         else:
@@ -520,10 +496,8 @@ class Pager:
                         self.stack.extend(zk_ids)
                         self.head = -1
                         zk_id = self.stack[self.head]
-                        (main_window,
-                         links_window,
-                         link_nr) = self.next_note(zk_id,
-                                                   main_window_width,
+                        (main_window, links_window,
+                         link_nr) = self.next_note(zk_id, main_window_width,
                                                    ratio)
                 case Keybindings.D:
                     if len(self.stack) <= 1:
@@ -531,15 +505,12 @@ class Pager:
                     if self.head != -1:
                         self.stack = self.stack[:self.head] + \
                             self.stack[self.head+1:]
-                        self.head = self._check_head(self.head+1)
+                        self.head = self._check_head(self.head + 1)
                     else:
                         self.stack = self.stack[:self.head]
                     zk_id = self.stack[self.head]
-                    (main_window,
-                     links_window,
-                     link_nr) = self.next_note(zk_id,
-                                               main_window_width,
-                                               ratio)
+                    (main_window, links_window,
+                     link_nr) = self.next_note(zk_id, main_window_width, ratio)
 
                 case Keybindings.S_D:
                     current_zk_id = self.stack[self.head]
@@ -550,7 +521,7 @@ class Pager:
 
             main_window.refresh()
             links_window.refresh()
-            statusbar.update(len(self.stack), len(self.stack)+self.head+1)
+            statusbar.update(len(self.stack), len(self.stack) + self.head + 1)
 
     def run(self, zk_ids: list[str]) -> None:
         try:

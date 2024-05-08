@@ -10,11 +10,11 @@ from glob import glob1
 from multiprocessing import Pool
 from datetime import datetime
 
-from notepy.zettelkasten.notes import Note
-from notepy.wrappers.git_wrapper import Git, GitMixin
-from notepy.wrappers.editor_wrapper import Editor
-from notepy.zettelkasten.sql import DBManager
-from notepy.utils import ask_for_confirmation
+from appunti.zettelkasten.notes import Note
+from appunti.wrappers.git_wrapper import Git, GitMixin
+from appunti.wrappers.editor_wrapper import Editor
+from appunti.zettelkasten.sql import DBManager
+from appunti.utils import ask_for_confirmation
 
 
 # TODO: implement an abstract class for this.
@@ -50,29 +50,31 @@ class Zettelkasten(GitMixin):
         self.dbmanager = DBManager(self.index)
         self.git = self._detect_git_repo(self.vault)
         self.tmp = self.vault / ".tmp"
-        self.header_obj = [note_field.name
-                           for note_field in fields(self.note_obj)
-                           if note_field.name not in ['links', 'body']]
+        self.header_obj = [
+            note_field.name for note_field in fields(self.note_obj)
+            if note_field.name not in ['links', 'body']
+        ]
 
         if not self.vault.is_dir():
             raise VaultError(f"Vault '{self.vault}' is not a directory "
                              "or does not exist.")
 
     @classmethod
-    def initialize(cls,
-                   path: str | Path,
-                   author: str,
-                   git_init: bool = False,
-                   git_origin: str = "",
-                   autocommit: bool = False,
-                   autosync: bool = False,
-                   force: bool = False,
-                   note_obj: type[Note] = Note,
-                   delimiter: str = "---",
-                   header: str = "# ",
-                   link_del: tuple[str, str] = ('[[', ']]'),
-                   special_values: tuple[str, str] = ('date', 'tags'),
-                   ) -> Zettelkasten:
+    def initialize(
+            cls,
+            path: str | Path,
+            author: str,
+            git_init: bool = False,
+            git_origin: str = "",
+            autocommit: bool = False,
+            autosync: bool = False,
+            force: bool = False,
+            note_obj: type[Note] = Note,
+            delimiter: str = "---",
+            header: str = "# ",
+            link_del: tuple[str, str] = ('[[', ']]'),
+            special_values: tuple[str, str] = ('date', 'tags'),
+    ) -> Zettelkasten:
         """
         Initialize a new vault. A vault is made of a collection of
         notes, an sqlite database (.index.db), and an optional
@@ -88,8 +90,9 @@ class Zettelkasten(GitMixin):
 
         # check if a zettelkasten has been already initialized
         if cls.is_zettelkasten(path) and not force:
-            raise ZettelkastenException(f"'{path}' has already been initialized! "
-                                        "Use 'force=True' to force re-initialization")
+            raise ZettelkastenException(
+                f"'{path}' has already been initialized! "
+                "Use 'force=True' to force re-initialization")
 
         # create vault
         path.mkdir(exist_ok=True)
@@ -110,7 +113,8 @@ class Zettelkasten(GitMixin):
         if git_init:
             to_ignore = ['.last', '.tmp', '.index.db']
             git_path = path / ".git"
-            git = Git(path) if git_path.exists() else Git.init(path, to_ignore=to_ignore)
+            git = Git(path) if git_path.exists() else Git.init(
+                path, to_ignore=to_ignore)
             # add origin if provided
             if git_origin:
                 git.origin = git_origin
@@ -152,7 +156,8 @@ class Zettelkasten(GitMixin):
         Raise an exception if vault is not a zettelkasten
         """
         if not self.is_zettelkasten(self.vault):
-            raise ZettelkastenException(f"'{self.vault}' must be initialized first.")
+            raise ZettelkastenException(
+                f"'{self.vault}' must be initialized first.")
 
     def _add_last_opened(self, name: str | Path) -> None:
         """
@@ -161,7 +166,7 @@ class Zettelkasten(GitMixin):
         :param name: name of the note that was last opened.
         """
         with open(self.last, "w") as f:
-            f.write(str(name)+"\n")
+            f.write(str(name) + "\n")
 
     # TODO: use a higher level editor_wrapper instead of hx
     def _edit_temporary_note(self,
@@ -208,16 +213,19 @@ class Zettelkasten(GitMixin):
         # if id was changed, raise an error.
         if new_note.zk_id != note.zk_id:
             if strict:
-                raise IDChangedError("You cannot change the ID of an existing note.")
+                raise IDChangedError(
+                    "You cannot change the ID of an existing note.")
             else:
                 new_note.zk_id = note.zk_id
-                print("The note ID looks different. It has been returned to its "
-                      "original value as it could create issues in your vault.")
+                print(
+                    "The note ID looks different. It has been returned to its "
+                    "original value as it could create issues in your vault.")
 
         # Make sure title doesn't clash with other notes
         if new_note.title != note.title:
-            self._check_unique_title(
-                new_note.title, strict=strict, blocking=False)
+            self._check_unique_title(new_note.title,
+                                     strict=strict,
+                                     blocking=False)
 
         # ask for confirmation
         if confirmation and not ask_for_confirmation("Save note?"):
@@ -228,9 +236,10 @@ class Zettelkasten(GitMixin):
 
         return new_note
 
-    def _check_unique_title(self, note_title: str,
+    def _check_unique_title(self,
+                            note_title: str,
                             strict: bool = False,
-                            blocking: bool=False) -> None:
+                            blocking: bool = False) -> None:
         all_titles = [title[0] for title in self.dbmanager.get_title()]
         if note_title in all_titles:
             if strict:
@@ -305,7 +314,10 @@ class Zettelkasten(GitMixin):
 
         return new_note
 
-    def update(self, zk_id: str, confirmation: bool = False, strict: bool = False) -> None:
+    def update(self,
+               zk_id: str,
+               confirmation: bool = False,
+               strict: bool = False) -> None:
         """
         Update the note corresponding to the provded ID.
 
@@ -331,7 +343,9 @@ class Zettelkasten(GitMixin):
                                   strict=strict,
                                   quiet=True)
 
-        new_note = self._edit_temporary_note(note, confirmation=confirmation, strict=strict)
+        new_note = self._edit_temporary_note(note,
+                                             confirmation=confirmation,
+                                             strict=strict)
         if new_note is None:
             return None
 
@@ -446,32 +460,34 @@ class Zettelkasten(GitMixin):
 
         return sum(no_deleted_files)
 
-    def list_notes(self,
-                   title: Optional[list[str]] = None,
-                   zk_id: Optional[list[str]] = None,
-                   author: Optional[list[str]] = None,
-                   tags: Optional[list[str]] = None,
-                   links: Optional[list[str]] = None,
-                   # creation_date: Optional[list[str]] = None,
-                   # access_date: Optional[list[str]] = None,
-                   sort_by: Optional[str] = None,
-                   descending: bool = True,
-                   show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
+    def list_notes(
+            self,
+            title: Optional[list[str]] = None,
+            zk_id: Optional[list[str]] = None,
+            author: Optional[list[str]] = None,
+            tags: Optional[list[str]] = None,
+            links: Optional[list[str]] = None,
+            # creation_date: Optional[list[str]] = None,
+            # access_date: Optional[list[str]] = None,
+            sort_by: Optional[str] = None,
+            descending: bool = True,
+            show: list[str] = ['title', 'zk_id']) -> list[tuple[str, ...]]:
         """
         List and filter based on tags, links and date
         """
         # check if vault is a zettelkasten
         self._check_zettelkasten()
-        results = self.dbmanager.list_notes(title,
-                                            zk_id,
-                                            author,
-                                            tags,
-                                            links,
-                                            # creation_date,
-                                            # access_date,
-                                            sort_by,
-                                            descending,
-                                            show)
+        results = self.dbmanager.list_notes(
+            title,
+            zk_id,
+            author,
+            tags,
+            links,
+            # creation_date,
+            # access_date,
+            sort_by,
+            descending,
+            show)
 
         return results
 
@@ -582,10 +598,7 @@ class Zettelkasten(GitMixin):
             raise ZettelkastenException(".last file not found")
 
         try:
-            last_content = (self.last
-                            .read_text()
-                            .strip()
-                            .removesuffix(".md"))
+            last_content = (self.last.read_text().strip().removesuffix(".md"))
         except TypeError:
             raise ZettelkastenException(".last file is malformatted or empty.")
         except ValueError:
@@ -593,7 +606,8 @@ class Zettelkasten(GitMixin):
 
         return last_content
 
-    def next(self, title: str,
+    def next(self,
+             title: str,
              zk_ids: list[str],
              confirmation: bool = False,
              strict: bool = False) -> Optional[Note]:
@@ -631,7 +645,7 @@ class Zettelkasten(GitMixin):
 
         # get links and other metadata
         links: set[str] = set()
-        tags: set [str] = set()
+        tags: set[str] = set()
         for note in notes:
             links = links.union(note.links)
             tags = tags.union(note.tags)
@@ -643,7 +657,7 @@ class Zettelkasten(GitMixin):
         tmp_note.tags = tags
 
         tmp_note.body += "\n"
-        tmp_note.body += "\n".join(["- "+f"[[{link}]]" for link in links])
+        tmp_note.body += "\n".join(["- " + f"[[{link}]]" for link in links])
 
         # create new note
         new_note = self._edit_temporary_note(tmp_note, confirmation, strict)
@@ -680,7 +694,7 @@ class Zettelkasten(GitMixin):
 
         # add and commit
         self.commit_and_sync(msg=f'Commit "{new_note.zk_id}" continuing '
-                                 f'from "{note.zk_id}"',
+                             f'from "{note.zk_id}"',
                              commit=self.autocommit,
                              push=self.autosync)
 
@@ -693,15 +707,11 @@ class Zettelkasten(GitMixin):
         if not self._note_exists(zk_id):
             raise ZettelkastenException(f"Note '{zk_id}' does not exist.")
 
-        columns = ['zk_id',
-                   'title',
-                   'author',
-                   'creation_date',
-                   'last_changed',
-                   'tag',
-                   'link']
-        result = self.list_notes(zk_id=[zk_id],
-                                 show=columns)
+        columns = [
+            'zk_id', 'title', 'author', 'creation_date', 'last_changed', 'tag',
+            'link'
+        ]
+        result = self.list_notes(zk_id=[zk_id], show=columns)
         metadata: MutableMapping[str, Any] = {}
         metadata['zk_id'] = result[0][0]
         metadata['title'] = result[0][1]

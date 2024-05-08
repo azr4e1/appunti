@@ -12,7 +12,7 @@ from string import punctuation
 from typing import Any, TypeVar, Optional, TypeAlias
 from collections.abc import Collection, Sequence, MutableMapping
 
-from notepy.utils import sluggify
+from appunti.utils import sluggify
 
 Target = TypeVar("Target", str, Path)
 Parsed: TypeAlias = MutableMapping[str, Any]
@@ -25,9 +25,10 @@ _INVALID_CHARS = punctuation.replace("_", "").replace("#", "")
 _NEXT_NOTE_FMT = "Next -> "
 
 
-def _open_or_return_handle(*,
-                           path: Optional[Target] = None,
-                           handle: Optional[TextIOWrapper] = None) -> TextIOWrapper:
+def _open_or_return_handle(
+        *,
+        path: Optional[Target] = None,
+        handle: Optional[TextIOWrapper] = None) -> TextIOWrapper:
     """
     If path is provided, return a handle for the file at path.
     If handle is provided, just return the handle.
@@ -44,12 +45,14 @@ def _open_or_return_handle(*,
     elif handle:
         file_obj = handle
     else:
-        raise TypeError("missing 1 required keyword argument between 'path' or 'handle'")
+        raise TypeError(
+            "missing 1 required keyword argument between 'path' or 'handle'")
 
     return file_obj
 
 
 class BaseParser(ABC):
+
     @abstractmethod
     def parse(self,
               path: Optional[Target] = None,
@@ -70,7 +73,8 @@ class HeaderParser(BaseParser):
                           NAME is a member of special_names
     """
 
-    def __init__(self, parsing_obj: Collection[str],
+    def __init__(self,
+                 parsing_obj: Collection[str],
                  delimiter: str = '---',
                  special_names: Collection[str] = ['date', 'last', 'tags']):
         self.parsing_obj = parsing_obj
@@ -119,7 +123,8 @@ class HeaderParser(BaseParser):
 
         return parsed_obj, file_obj
 
-    def _line_parser(self, line: str, parsing_obj: set[str]) -> tuple[str, str]:
+    def _line_parser(self, line: str,
+                     parsing_obj: set[str]) -> tuple[str, str]:
         """
         Parse a line into key/value pairs.
 
@@ -150,8 +155,9 @@ class HeaderParser(BaseParser):
         name = name.strip()
         value = value.strip()
         if name not in parsing_obj:
-            error_text = (f"'{name}' is not a recognized value or is a duplicate."
-                          f"\nRecognized values: {', '.join(self.parsing_obj)}")
+            error_text = (
+                f"'{name}' is not a recognized value or is a duplicate."
+                f"\nRecognized values: {', '.join(self.parsing_obj)}")
             raise FrontmatterException(error_text)
 
         parsing_obj.discard(name)
@@ -194,13 +200,15 @@ class HeaderParser(BaseParser):
         # TODO: issue a warning for malformed tags
 
         # parse out every special char except # and _
-        clean_tags = tags.translate(tags.maketrans(
-            _INVALID_CHARS, ' ' * len(_INVALID_CHARS)))
+        clean_tags = tags.translate(
+            tags.maketrans(_INVALID_CHARS, ' ' * len(_INVALID_CHARS)))
         # split tags, clean out whitespace and remove words
         # not starting with #
         tmp_tags_list: list[str] = clean_tags.split(' ')
-        tags_list = set([tag.removeprefix('#') for tag in tmp_tags_list
-                         if tag != '' and tag.startswith('#')])
+        tags_list = set([
+            tag.removeprefix('#') for tag in tmp_tags_list
+            if tag != '' and tag.startswith('#')
+        ])
 
         return tags_list
 
@@ -224,8 +232,7 @@ class BodyParser(BaseParser):
 
     def __init__(self,
                  header1: str = "# ",
-                 link_del: tuple[str, str] = ("[[", "]]")
-                 ):
+                 link_del: tuple[str, str] = ("[[", "]]")):
         self.header1 = header1
         self.link_del = link_del
 
@@ -244,7 +251,8 @@ class BodyParser(BaseParser):
             body.append(clean_line)
 
             # first line needs to be a title
-            if clean_line != "" and not clean_line.startswith(self.header1) and not context:
+            if clean_line != "" and not clean_line.startswith(
+                    self.header1) and not context:
                 raise BodyException("The body needs to start with a title")
             elif clean_line.startswith(self.header1) and not context:
                 context = _IN_CONTEXT
@@ -261,10 +269,12 @@ class BodyParser(BaseParser):
                 next.extend(line_links)
             links.extend(line_links)
 
-        return {'header': headers,
-                'links': set(links),
-                'next': set(next),
-                'body': body}, file_obj
+        return {
+            'header': headers,
+            'links': set(links),
+            'next': set(next),
+            'body': body
+        }, file_obj
 
     def _link_parser(self, line: str) -> Collection[str]:
         """
@@ -277,12 +287,16 @@ class BodyParser(BaseParser):
         start_link = self.link_del[0]
         end_link = self.link_del[1]
         # find links with regex
-        pattern = re.compile(f"{re.escape(start_link)}.*?{re.escape(end_link)}")
+        pattern = re.compile(
+            f"{re.escape(start_link)}.*?{re.escape(end_link)}")
         # remove link pre- and suffixes
-        line_links = [link.removeprefix(start_link).removesuffix(end_link)
-                      for link in pattern.findall(line)]
+        line_links = [
+            link.removeprefix(start_link).removesuffix(end_link)
+            for link in pattern.findall(line)
+        ]
         # remove empty link
-        line_links_set = set(sluggify(link) for link in line_links if link != "")
+        line_links_set = set(
+            sluggify(link) for link in line_links if link != "")
 
         return line_links_set
 
@@ -299,7 +313,8 @@ class BodyParser(BaseParser):
         start_link = self.link_del[0]
         end_link = self.link_del[1]
         pattern = re.compile(
-            f"^{_NEXT_NOTE_FMT}{re.escape(start_link)}.*?{re.escape(end_link)}$")
+            f"^{_NEXT_NOTE_FMT}{re.escape(start_link)}.*?{re.escape(end_link)}$"
+        )
 
         return bool(pattern.match(line))
 

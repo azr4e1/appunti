@@ -3,8 +3,7 @@ from collections.abc import MutableMapping
 from typing import Any
 from importlib.metadata import version
 
-_PROG_NAME = 'notepy'
-
+_PROG_NAME = 'appunti'
 
 _COMMANDS: MutableMapping[str, Any] = {
     "command_initialize": {
@@ -21,7 +20,8 @@ _COMMANDS: MutableMapping[str, Any] = {
                 "type": str
             },
             "--force": {
-                "help": "Force creation of vault, overwriting existing files and directories.",
+                "help":
+                "Force creation of vault, overwriting existing files and directories.",
                 "action": "store_true"
             }
         }
@@ -142,11 +142,17 @@ _COMMANDS: MutableMapping[str, Any] = {
             #     "default": None
             # },
             "--sort-by": {
-                "help": "sort the list by criteria in ascending order.",
-                "nargs": 1,
-                "type": str,
+                "help":
+                "sort the list by criteria in ascending order.",
+                "nargs":
+                1,
+                "type":
+                str,
                 "default": ['creation_date'],
-                "choices": ["title", "author", "zk_id", "tag", "link", "creation_date", "last_changed"]
+                "choices": [
+                    "title", "author", "zk_id", "tag", "link", "creation_date",
+                    "last_changed"
+                ]
             },
             "--descending": {
                 "help": "How to sort the results.",
@@ -157,11 +163,17 @@ _COMMANDS: MutableMapping[str, Any] = {
                 "action": "store_true"
             },
             "--show": {
-                "help": "Which attributes to show",
-                "type": str,
-                "nargs": "+",
+                "help":
+                "Which attributes to show",
+                "type":
+                str,
+                "nargs":
+                "+",
                 "default": ["title", "zk_id"],
-                "choices": ["title", "author", "zk_id", "creation_date", "last_changed", "tag", "link"]
+                "choices": [
+                    "title", "author", "zk_id", "creation_date",
+                    "last_changed", "tag", "link"
+                ]
             },
             "--no-header": {
                 "help": "Do not show header",

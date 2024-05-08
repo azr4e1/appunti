@@ -6,8 +6,7 @@ from collections import defaultdict
 from collections.abc import MutableMapping
 from typing import Optional
 
-from notepy.zettelkasten.zettelkasten import Zettelkasten
-
+from appunti.zettelkasten.zettelkasten import Zettelkasten
 
 ESCAPE_DELAY = 50
 POSITION_OFFSET = 2
@@ -27,6 +26,7 @@ class OddKeys(IntEnum):
 # TODO: add window to the right containing metadata information if there is enough space
 # TODO: comment!
 class Interactive:
+
     def __init__(self, zk: Zettelkasten):
         self.w = curses.initscr()
         self.zk = zk
@@ -39,13 +39,11 @@ class Interactive:
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-    def print_results(self,
-                      results: list[tuple[str, ...]],
-                      pos: int) -> None:
+    def print_results(self, results: list[tuple[str, ...]], pos: int) -> None:
         curses.curs_set(False)
         template = " {}{}"
         for i in range(POSITION_OFFSET, curses.LINES):
-            text = self.pad_results(i+self.relative_start, results, template)
+            text = self.pad_results(i + self.relative_start, results, template)
             self.w.addstr(i, 0, text)
             self.w.refresh()
         curses.curs_set(True)
@@ -60,9 +58,7 @@ class Interactive:
 
         return pos
 
-    def catch_key(self,
-                  c: int,
-                  text: str,
+    def catch_key(self, c: int, text: str,
                   pos: int) -> tuple[str, int, bool, bool]:
         endit = False
         redraw = False
@@ -70,7 +66,7 @@ class Interactive:
             case curses.KEY_ENTER | OddKeys.ALT_ENTER_1 | OddKeys.ALT_ENTER_2:
                 endit = True
             case OddKeys.MULTI_SELECTION:
-                self.selection[pos] = 1-self.selection[pos]
+                self.selection[pos] = 1 - self.selection[pos]
                 redraw = True
             case OddKeys.CTRL_A:
                 if all(self.selection.values()):
@@ -90,8 +86,9 @@ class Interactive:
                 curses.resize_term(*self.w.getmaxyx())
                 redraw = True
             case curses.KEY_BACKSPACE | OddKeys.ALT_BACKSPACE:
-                cursor_pos = self.check_cursor_pos(text, self.cursor_pos-1)
-                new_text = text[:cursor_pos] + text[cursor_pos+1:] if self.cursor_pos > 0 else text
+                cursor_pos = self.check_cursor_pos(text, self.cursor_pos - 1)
+                new_text = text[:cursor_pos] + text[
+                    cursor_pos + 1:] if self.cursor_pos > 0 else text
                 self.cursor_pos = cursor_pos
                 if text != new_text:
                     pos = 0
@@ -100,7 +97,9 @@ class Interactive:
                     redraw = True
                 text = new_text
             case curses.KEY_DC:
-                new_text = text[:self.cursor_pos] + text[self.cursor_pos+1:] if self.cursor_pos <= len(text) else text
+                new_text = text[:self.cursor_pos] + text[
+                    self.cursor_pos +
+                    1:] if self.cursor_pos <= len(text) else text
                 if text != new_text:
                     pos = 0
                     self.relative_start = 0
@@ -109,14 +108,14 @@ class Interactive:
                 text = new_text
             case curses.KEY_LEFT:
                 # check cursor position
-                self.cursor_pos = (self.cursor_pos-1) % (len(text)+1)
+                self.cursor_pos = (self.cursor_pos - 1) % (len(text) + 1)
             case curses.KEY_RIGHT:
                 # check cursor position
-                self.cursor_pos = (self.cursor_pos+1) % (len(text)+1)
+                self.cursor_pos = (self.cursor_pos + 1) % (len(text) + 1)
             case _:
                 text = text[:self.cursor_pos] + chr(c) + text[self.cursor_pos:]
-                text = text[:curses.COLS-1]
-                if self.cursor_pos < curses.COLS-1:
+                text = text[:curses.COLS - 1]
+                if self.cursor_pos < curses.COLS - 1:
                     self.cursor_pos += 1
                 pos = 0
                 self.relative_start = 0
@@ -125,8 +124,7 @@ class Interactive:
 
         return text, pos, endit, redraw
 
-    def check_pos(self,
-                  pos: int,
+    def check_pos(self, pos: int,
                   results: list[tuple[str, ...]]) -> tuple[int, bool]:
         length = len(results)
         redraw = False
@@ -153,16 +151,18 @@ class Interactive:
 
         return pos, redraw
 
-    def draw_pointer(self,
-                     pos: int,
-                     old_pos: int) -> None:
-        if (cancel_pos := old_pos-self.prev_relative_start+POSITION_OFFSET) < curses.LINES:
+    def draw_pointer(self, pos: int, old_pos: int) -> None:
+        if (cancel_pos := old_pos - self.prev_relative_start +
+                POSITION_OFFSET) < curses.LINES:
             self.w.addstr(cancel_pos, 0, " ")
         self.prev_relative_start = self.relative_start
-        self.w.addstr(pos-self.relative_start+POSITION_OFFSET, 0, ">", curses.color_pair(1))
+        self.w.addstr(pos - self.relative_start + POSITION_OFFSET, 0, ">",
+                      curses.color_pair(1))
 
     @staticmethod
-    def parse_text(text: str) -> tuple[list[str], Optional[list[str]], Optional[list[str]]]:
+    def parse_text(
+        text: str
+    ) -> tuple[list[str], Optional[list[str]], Optional[list[str]]]:
         tag_pattern = re.compile(r"#[^ ]*", re.IGNORECASE)
         link_pattern = re.compile(r"\[\[.*?\]\]")
         raw_tags = re.findall(tag_pattern, text)
@@ -205,21 +205,19 @@ class Interactive:
     def pad_text(text: str) -> str:
         length = len(text)
         length_to_fill = curses.COLS - length if length < curses.COLS else 0
-        padding = " " * (length_to_fill-1)
+        padding = " " * (length_to_fill - 1)
 
         padded_text = text + padding
 
-        return padded_text[:curses.COLS-1]
+        return padded_text[:curses.COLS - 1]
 
-    def pad_results(self, draw_pos: int,
-                    results: list[tuple[str, ...]],
+    def pad_results(self, draw_pos: int, results: list[tuple[str, ...]],
                     template: str) -> str:
-        if draw_pos < len(results)+POSITION_OFFSET:
+        if draw_pos < len(results) + POSITION_OFFSET:
             index = draw_pos - POSITION_OFFSET
             title = results[index][0]
             selection_indicator = "*" if self.selection[index] else " "
-            text = self.pad_text(template.format(selection_indicator,
-                                 title))
+            text = self.pad_text(template.format(selection_indicator, title))
         else:
             text = self.pad_text(" ")
 

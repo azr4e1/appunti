@@ -6,7 +6,7 @@ from __future__ import annotations
 import subprocess
 from typing import Optional, Any, Protocol
 from pathlib import Path
-from notepy.wrappers.base_wrapper import BaseWrapper, WrapperException, run_and_handle
+from appunti.wrappers.base_wrapper import BaseWrapper, WrapperException, run_and_handle
 from shutil import rmtree
 
 
@@ -38,9 +38,7 @@ class Git(BaseWrapper):
                                "Use `Git.init('path')` to initialize.")
 
     @classmethod
-    def init(cls,
-             path: Path | str,
-             to_ignore: list[str] = []) -> Git:
+    def init(cls, path: Path | str, to_ignore: list[str] = []) -> Git:
         """
         Initialize a new git repo in the directory provided.
 
@@ -63,7 +61,7 @@ class Git(BaseWrapper):
         gitignore.touch(exist_ok=True)
         with open(gitignore, "a") as f:
             for ignored in to_ignore:
-                f.write(ignored+"\n")
+                f.write(ignored + "\n")
 
         # initialize repository
         process = run_and_handle("git init", exception=GitException, cwd=path)
@@ -146,17 +144,16 @@ class Git(BaseWrapper):
         Check if origin is defined.
         """
         command = ['git', 'config', '--get', 'remote.origin.url']
-        origin = subprocess.run(command,
-                                cwd=self.path,
-                                capture_output=True)
+        origin = subprocess.run(command, cwd=self.path, capture_output=True)
 
         origin_exists = True
         if origin.returncode == 1:  # error code given by this failed action
             origin_exists = False
         elif origin.returncode != 0:  # for any other: raise exception
-            error_message = (f"Command '{' '.join(command)}' returned a non-zero exit status "
-                             f"{origin.returncode}. Below is the full stderr:\n\n"
-                             f"{origin.stdout.decode('utf-8')}")
+            error_message = (
+                f"Command '{' '.join(command)}' returned a non-zero exit status "
+                f"{origin.returncode}. Below is the full stderr:\n\n"
+                f"{origin.stdout.decode('utf-8')}")
             raise GitException(error_message)
 
         return origin_exists
@@ -187,16 +184,15 @@ class Git(BaseWrapper):
         get origin URL.
         """
         command = ['git', 'config', '--get', 'remote.origin.url']
-        process = subprocess.run(command,
-                                 cwd=self.path,
-                                 capture_output=True)
+        process = subprocess.run(command, cwd=self.path, capture_output=True)
 
         if process.returncode == 1:  # error code given by this failed action
             origin = ""
         elif process.returncode != 0:  # for any other: raise exception
-            error_message = (f"Command '{' '.join(command)}' returned a non-zero exit status "
-                             f"{process.returncode}. Below is the full stderr:\n\n"
-                             f"{process.stdout.decode('utf-8')}")
+            error_message = (
+                f"Command '{' '.join(command)}' returned a non-zero exit status "
+                f"{process.returncode}. Below is the full stderr:\n\n"
+                f"{process.stdout.decode('utf-8')}")
             raise GitException(error_message)
         else:
             origin = process.stdout.decode('utf-8').strip()
@@ -215,7 +211,9 @@ class Git(BaseWrapper):
         else:
             command = f'git remote add origin "{value}"'
 
-        process = run_and_handle(command, exception=GitException, cwd=self.path)
+        process = run_and_handle(command,
+                                 exception=GitException,
+                                 cwd=self.path)
         del process
 
     @origin.deleter
@@ -246,10 +244,13 @@ class GitMixinProtocol(Protocol):
     """
     Protocol class for type-checker
     """
-    @property
-    def vault(self) -> Path: ...
 
-    def _detect_git_repo(self, path: Path) -> Git | None: ...
+    @property
+    def vault(self) -> Path:
+        ...
+
+    def _detect_git_repo(self, path: Path) -> Git | None:
+        ...
 
 
 # from: https://stackoverflow.com/questions/51930339/how-do-i-correctly-add-type-hints-to-mixin-classes,

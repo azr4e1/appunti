@@ -14,11 +14,12 @@ from pathlib import Path
 from hashlib import md5
 import random
 
-from notepy.parser.parser import HeaderParser, BodyParser
-from notepy.utils import sluggify
+from appunti.parser.parser import HeaderParser, BodyParser
+from appunti.utils import sluggify
 
 
 class BaseNote(ABC):
+
     @classmethod
     @abstractmethod
     def new(cls, title: str, author: str) -> Note:
@@ -105,19 +106,19 @@ class Note(BaseNote):
         """
         metadata = cls._generate_metadata(title, author)
         body = f"# {title}\n\n# References"
-        zk = cls(**metadata,
-                 links=[],
-                 next=[],
-                 body=body)
+        zk = cls(**metadata, links=[], next=[], body=body)
 
         return zk
 
     @classmethod
     def read(cls,
              path: str | Path,
-             parsing_obj: Collection[str] = ['title', 'author', 'date', 'last', 'zk_id', 'tags'],
+             parsing_obj: Collection[str] = [
+                 'title', 'author', 'date', 'last', 'zk_id', 'tags'
+             ],
              delimiter: str = "---",
-             special_names: Collection[str] = ("date", "last", "tags", 'zk_id'),
+             special_names: Collection[str] = ("date", "last", "tags",
+                                               'zk_id'),
              header: str = "# ",
              link_del: tuple[str, str] = ('[[', ']]'),
              strict: bool = False,
@@ -136,11 +137,11 @@ class Note(BaseNote):
         header_parser = HeaderParser(parsing_obj=parsing_obj,
                                      delimiter=delimiter,
                                      special_names=special_names)
-        body_parser = BodyParser(header1=header,
-                                 link_del=link_del)
+        body_parser = BodyParser(header1=header, link_del=link_del)
 
         if not Path(path).exists():
-            raise NoteException("Note does not exist. Consider reindexing the vault.")
+            raise NoteException(
+                "Note does not exist. Consider reindexing the vault.")
 
         with open(path) as f:
             frontmatter_meta, _ = header_parser.parse(handle=f)
@@ -148,19 +149,20 @@ class Note(BaseNote):
 
         # raise exception if first header is different from title
         if not quiet:
-            if body_meta['header'][0].removeprefix(header).strip() != frontmatter_meta['title']:
+            if body_meta['header'][0].removeprefix(
+                    header).strip() != frontmatter_meta['title']:
                 if strict:
-                    raise NoteException("First header and title must be the same.")
+                    raise NoteException(
+                        "First header and title must be the same.")
                 else:
-                    print(f"First header and title of note {frontmatter_meta['zk_id']} do not coincide.")
+                    print(
+                        f"First header and title of note {frontmatter_meta['zk_id']} do not coincide."
+                    )
 
         links = body_meta['links']
         next = body_meta['next']
         body = "\n".join(body_meta['body']).strip()
-        new_note = Note(links=links,
-                        next=next,
-                        body=body,
-                        **frontmatter_meta)
+        new_note = Note(links=links, next=next, body=body, **frontmatter_meta)
 
         return new_note
 
@@ -193,19 +195,24 @@ class Note(BaseNote):
         :return: the frontmatter string
         """
 
-        frontmatter_names = [note_field.name
-                             for note_field in fields(Note)
-                             if note_field.name not in ['links', 'next', 'body']]
-        frontmatter_metadata = {name: getattr(self, name) for name in frontmatter_names}
-        frontmatter_metadata['tags'] = " ".join('#' + tag for tag in frontmatter_metadata['tags'])
-        frontmatter_metadata['date'] = (frontmatter_metadata['date']
-                                        .strftime("%Y-%m-%dT%H:%M:%S"))
-        frontmatter_metadata['last'] = (frontmatter_metadata['last']
-                                        .strftime("%Y-%m-%dT%H:%M:%S"))
+        frontmatter_names = [
+            note_field.name for note_field in fields(Note)
+            if note_field.name not in ['links', 'next', 'body']
+        ]
+        frontmatter_metadata = {
+            name: getattr(self, name)
+            for name in frontmatter_names
+        }
+        frontmatter_metadata['tags'] = " ".join(
+            '#' + tag for tag in frontmatter_metadata['tags'])
+        frontmatter_metadata['date'] = (
+            frontmatter_metadata['date'].strftime("%Y-%m-%dT%H:%M:%S"))
+        frontmatter_metadata['last'] = (
+            frontmatter_metadata['last'].strftime("%Y-%m-%dT%H:%M:%S"))
         yml_header = '\n'.join(
-                ['---'] +
-                [f'{key}: {el}' for key, el in frontmatter_metadata.items()] +
-                ['---'])
+            ['---'] +
+            [f'{key}: {el}'
+             for key, el in frontmatter_metadata.items()] + ['---'])
 
         return yml_header
 
@@ -246,7 +253,7 @@ class Note(BaseNote):
         date_formatted = date.strftime("%Y%m%d%H%M%S")
         salt = ''.join(random.choice(ascii_letters) for i in range(16))
 
-        id = md5((date_formatted+salt).encode()).hexdigest()
+        id = md5((date_formatted + salt).encode()).hexdigest()
 
         return id
 

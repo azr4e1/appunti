@@ -5,17 +5,16 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, fields
 from argparse import ArgumentParser, Namespace
 
-from notepy.zettelkasten.zettelkasten import Zettelkasten
-from notepy.zettelkasten import zettelkasten as zk
-from notepy.zettelkasten.notes import NoteException
-from notepy.wrappers.base_wrapper import WrapperException
-from notepy.wrappers.editor_wrapper import EditorException
-from notepy.utils import spinner, ask_for_confirmation
-from notepy.zettelkasten.sql import DBManagerException
-from notepy.cli.colors import color
-from notepy.cli.interactive_selection import Interactive
-from notepy.cli.pager import Pager
-
+from appunti.zettelkasten.zettelkasten import Zettelkasten
+from appunti.zettelkasten import zettelkasten as zk
+from appunti.zettelkasten.notes import NoteException
+from appunti.wrappers.base_wrapper import WrapperException
+from appunti.wrappers.editor_wrapper import EditorException
+from appunti.utils import spinner, ask_for_confirmation
+from appunti.zettelkasten.sql import DBManagerException
+from appunti.cli.colors import color
+from appunti.cli.interactive_selection import Interactive
+from appunti.cli.pager import Pager
 
 _COLORS = {
     "title": "CYAN",
@@ -38,7 +37,8 @@ class SubcommandsMixin:
         print("Function not implemented.")
 
     @staticmethod
-    def _get_zk_id(args: Namespace, my_zk: Zettelkasten) -> Optional[list[str]]:
+    def _get_zk_id(args: Namespace,
+                   my_zk: Zettelkasten) -> Optional[list[str]]:
         if args.zk_id is None or not args.zk_id:
             loop = Interactive(my_zk)
             zk_id = loop.run()
@@ -144,7 +144,8 @@ class SubcommandsMixin:
 
         # we need to ask for confirmation here since it would
         # interfere with the spinner
-        if args.no_confirmation and not ask_for_confirmation("Delete note(s)?"):
+        if args.no_confirmation and not ask_for_confirmation(
+                "Delete note(s)?"):
             return None
 
         if len(zk_ids) == 1:
@@ -179,13 +180,18 @@ class SubcommandsMixin:
         if not no_header:
             print()
             header_length = len(", ".join(header_names))
-            header = ", ".join([color(col, _COLORS.get(col, "WHITE"),
-                                      no_color=no_color) for col in header_names])
+            header = ", ".join([
+                color(col, _COLORS.get(col, "WHITE"), no_color=no_color)
+                for col in header_names
+            ])
             print(header)
-            print("-"*header_length)
+            print("-" * header_length)
         for res in results:
-            text = ", ".join([color(col, _COLORS.get(header_names[index], "WHITE"),
-                             no_color=no_color) for index, col in enumerate(res)])
+            text = ", ".join([
+                color(col,
+                      _COLORS.get(header_names[index], "WHITE"),
+                      no_color=no_color) for index, col in enumerate(res)
+            ])
             print(text)
 
     @staticmethod
@@ -204,9 +210,7 @@ class SubcommandsMixin:
             zk_ids = SubcommandsMixin._get_zk_id(args, my_zk)
             if zk_ids is None or not zk_ids:
                 return
-            _ = my_zk.next(args.title[0],
-                           zk_ids,
-                           args.no_confirmation,
+            _ = my_zk.next(args.title[0], zk_ids, args.no_confirmation,
                            args.strict)
         except zk.ZettelkastenException as e:
             print(e)
@@ -218,22 +222,22 @@ class SubcommandsMixin:
             print(e)
 
     @staticmethod
-    @spinner("Syncing with remote...",
-             "Syncing terminated successfully. You may need to reindex the vault.")
+    @spinner(
+        "Syncing with remote...",
+        "Syncing terminated successfully. You may need to reindex the vault.")
     def sync(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
         my_zk.sync()
 
     @staticmethod
-    @spinner("Committing current changes...", "Commit terminated successfully.")
+    @spinner("Committing current changes...",
+             "Commit terminated successfully.")
     def commit(args: Namespace) -> None:
         my_zk = SubcommandsMixin._create_zettelkasten(args)
         my_zk.commit()
 
     @staticmethod
-    def _info_helper(args: Namespace,
-                     my_zk: Zettelkasten,
-                     zk_id: str) -> None:
+    def _info_helper(args: Namespace, my_zk: Zettelkasten, zk_id: str) -> None:
         result = my_zk.get_metadata(zk_id)
         columns = list(result.keys())
         max_length = len(max(columns, key=len)) + _TAB_LENGTH
@@ -242,20 +246,23 @@ class SubcommandsMixin:
                 continue
             distance = " " * (max_length - len(col))
             text = f"{col}: {distance}{result[col]}"
-            colored_text = color(text, _COLORS.get(col, "WHITE"),
+            colored_text = color(text,
+                                 _COLORS.get(col, "WHITE"),
                                  no_color=args.no_color)
             print(colored_text)
         for col in ['tag', 'link']:
-            length_text = len(col+": ")
+            length_text = len(col + ": ")
             elements = list(result[col])
             distance = " " * (max_length - len(col))
             text = f"{col}: {distance}{elements[0]}"
-            colored_text = color(text, _COLORS.get(col, "WHITE"),
+            colored_text = color(text,
+                                 _COLORS.get(col, "WHITE"),
                                  no_color=args.no_color)
             print(colored_text)
             for el in elements[1:]:
-                text = distance + " "*length_text + el
-                colored_text = color(text, _COLORS.get(col, "WHITE"),
+                text = distance + " " * length_text + el
+                colored_text = color(text,
+                                     _COLORS.get(col, "WHITE"),
                                      no_color=args.no_color)
                 print(colored_text)
 
@@ -267,9 +274,9 @@ class SubcommandsMixin:
             if zk_ids is None or not zk_ids:
                 return
             for zk_id in zk_ids:
-                print("-"*_SEPARATOR_LENGTH)
+                print("-" * _SEPARATOR_LENGTH)
                 SubcommandsMixin._info_helper(args, my_zk, zk_id)
-                print("-"*_SEPARATOR_LENGTH)
+                print("-" * _SEPARATOR_LENGTH)
         except TypeError as e:
             print(e)
         except zk.ZettelkastenException as e:
@@ -293,16 +300,17 @@ class SubcommandsMixin:
     def list(args: Namespace) -> None:
         try:
             my_zk = SubcommandsMixin._create_zettelkasten(args)
-            results = my_zk.list_notes(args.title,
-                                       args.zk_id,
-                                       args.author_name,
-                                       args.tags,
-                                       args.links,
-                                       # args.creation_date,
-                                       # args.access_date,
-                                       args.sort_by[0],
-                                       args.descending,
-                                       args.show)
+            results = my_zk.list_notes(
+                args.title,
+                args.zk_id,
+                args.author_name,
+                args.tags,
+                args.links,
+                # args.creation_date,
+                # args.access_date,
+                args.sort_by[0],
+                args.descending,
+                args.show)
             SubcommandsMixin._pretty_print(args.show,
                                            results,
                                            no_header=args.no_header,
@@ -350,9 +358,8 @@ class Cli(SubcommandsMixin):
         # add the normal global flags
         if flags:
             for flag in flags:
-                flag_config = getattr(self, "flag_"+flag)
-                self.global_parser.add_argument("--"+flag,
-                                                **flag_config)
+                flag_config = getattr(self, "flag_" + flag)
+                self.global_parser.add_argument("--" + flag, **flag_config)
 
         # add the subcommands
         if commands:
@@ -384,9 +391,10 @@ class Cli(SubcommandsMixin):
         :param command: command to create a subparser for.
         """
         # get the command configuration: help, flags, etc.
-        command_config = getattr(self, "command_"+command)
+        command_config = getattr(self, "command_" + command)
         parser = self.subparsers.add_parser(command,
-                                            help=command_config.get("help", ""))
+                                            help=command_config.get(
+                                                "help", ""))
 
         # get the command's sub-flags
         subflags = command_config.get('flags', {})
